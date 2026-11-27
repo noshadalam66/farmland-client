@@ -12,6 +12,9 @@ namespace FarmLand.Empire.Prototype
         private Label livestockSummary;
         private ScrollView animalList;
         private FarmAnimal[] displayedAnimals;
+        private Foldout pedigreePanel;
+        private DropdownField pedigreeAnimal;
+        private VisualElement pedigreeTree;
         private readonly Dictionary<string, Button> animalPurchases = new Dictionary<string, Button>();
         private readonly List<(FarmAnimal Animal, Label Status, Button Action)> animalRows =
             new List<(FarmAnimal, Label, Button)>();
@@ -34,6 +37,13 @@ namespace FarmLand.Empire.Prototype
             animalList.style.maxHeight = 180;
             livestockPanel.Add(animalList);
             BuildBreedingPanel();
+            pedigreePanel = new Foldout { text = "Family tree", value = false };
+            livestockPanel.Add(pedigreePanel);
+            pedigreeAnimal = new DropdownField("Animal");
+            pedigreeAnimal.RegisterValueChangedCallback(_ => RenderPedigree());
+            pedigreePanel.Add(pedigreeAnimal);
+            pedigreeTree = new VisualElement();
+            pedigreePanel.Add(pedigreeTree);
             displayedAnimals = null;
             animalRows.Clear();
         }
@@ -77,21 +87,69 @@ namespace FarmLand.Empire.Prototype
         {
             Guid? previousFirst = AnimalAt(displayedAnimals, firstParent.index)?.AnimalId;
             Guid? previousSecond = AnimalAt(displayedAnimals, secondParent.index)?.AnimalId;
+            Guid? selectedAnimal = AnimalAt(displayedAnimals, pedigreeAnimal.index)?.AnimalId;
             displayedAnimals = animals;
+            pedigreeAnimal.choices = new List<string>(Array.ConvertAll(animals, AnimalLabel));
+            int selectedIndex = Array.FindIndex(animals, animal => animal.AnimalId == selectedAnimal);
+            pedigreeAnimal.SetValueWithoutNotify(animals.Length == 0
+                ? null : pedigreeAnimal.choices[Math.Max(0, selectedIndex)]);
+            pedigreePanel.style.display = animals.Length == 0 ? DisplayStyle.None : DisplayStyle.Flex;
+            RenderPedigree();
             SetParentChoices(animals, previousFirst, previousSecond);
             animalList.Clear();
             animalRows.Clear();
             foreach (FarmAnimal animal in animals)
             {
                 animalList.Add(new Label(AnimalLabel(animal)));
-                if (animal.MotherId.HasValue && animal.FatherId.HasValue)
-                    animalList.Add(new Label($"Mother {ShortAnimalId(animal.MotherId.Value)} · Father {ShortAnimalId(animal.FatherId.Value)}"));
                 var state = new Label();
                 var action = new Button(() => CareForAnimal(animal));
                 animalList.Add(state);
                 animalList.Add(action);
                 animalRows.Add((animal, state, action));
             }
+        }
+
+        private void RenderPedigree()
+        {
+            pedigreeTree.Clear();
+            FarmAnimal selected = AnimalAt(displayedAnimals, pedigreeAnimal.index);
+            if (selected == null) return;
+
+            var roster = new Dictionary<Guid, FarmAnimal>();
+            foreach (FarmAnimal animal in displayedAnimals) roster.Add(animal.AnimalId, animal);
+
+            AddPedigreeBranch(pedigreeTree, roster, new HashSet<Guid>(), selected.AnimalId, null);
+        }
+
+        private static void AddPedigreeBranch(VisualElement container, Dictionary<Guid, FarmAnimal> roster,
+            HashSet<Guid> shown, Guid id, string relationship)
+        {
+            string prefix = relationship == null ? string.Empty : $"{relationship} · ";
+            if (!roster.TryGetValue(id, out FarmAnimal animal))
+            {
+                container.Add(new Label($"{prefix}{ShortAnimalId(id)} · Record unavailable"));
+                return;
+            }
+
+            string heading = prefix + AnimalLabel(animal);
+            if (!shown.Add(id))
+            {
+                container.Add(new Label($"{heading} · Already shown"));
+                return;
+            }
+
+            if (!animal.MotherId.HasValue && !animal.FatherId.HasValue)
+            {
+                container.Add(new Label($"{heading} · No recorded parents"));
+                return;
+            }
+
+            var branch = new Foldout { text = heading, value = relationship == null };
+            container.Add(branch);
+            if (animal.MotherId.HasValue)
+                AddPedigreeBranch(branch, roster, shown, animal.MotherId.Value, "Mother");
+            if (animal.FatherId.HasValue)
+                AddPedigreeBranch(branch, roster, shown, animal.FatherId.Value, "Father");
         }
 
         private void BuyAnimal(string species)
