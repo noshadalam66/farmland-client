@@ -120,6 +120,12 @@ terrain worker uses the separately sourced elevation and water datasets.
 The picker opens at the San Francisco pilot center. Android and iOS use the
 coordinate fields in this build.
 
+## Starter settlement
+
+With migration 000013 and the town API, open **Settlement** after buying the
+farm expansion. Build the road, then cottages. Refresh the farm to check the
+growing resident count. This panel shows the saved settlement state.
+
 ## Reproducible pilot builds
 
 Use a licensed Unity 6.3 editor with the target's build support installed.

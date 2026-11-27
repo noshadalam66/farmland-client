@@ -34,6 +34,9 @@ namespace FarmLand.Empire.Networking
 
         [JsonProperty("mill")]
         public FarmMill Mill { get; private set; }
+
+        [JsonProperty("town")]
+        public FarmTown Town { get; private set; }
     }
 
     public sealed class FarmMill
@@ -174,7 +177,7 @@ namespace FarmLand.Empire.Networking
 
     public sealed class FarmCommand
     {
-        private FarmCommand(string action, int expectedRevision, string crop = null, string plotId = null, string species = null, Guid? animalId = null, Guid? partnerId = null)
+        private FarmCommand(string action, int expectedRevision, string crop = null, string plotId = null, string species = null, Guid? animalId = null, Guid? partnerId = null, string building = null)
         {
             if (expectedRevision < 0)
                 throw new ArgumentOutOfRangeException(nameof(expectedRevision));
@@ -185,6 +188,7 @@ namespace FarmLand.Empire.Networking
             Species = species;
             AnimalId = animalId;
             PartnerId = partnerId;
+            Building = building;
             ExpectedRevision = expectedRevision;
             CommandId = Guid.NewGuid();
         }
@@ -234,6 +238,16 @@ namespace FarmLand.Empire.Networking
             new FarmCommand("start_breeding", revision, animalId: first, partnerId: second);
 
         public static FarmCommand CollectOffspring(int revision) => new FarmCommand("collect_offspring", revision);
+
+        [JsonProperty("building", NullValueHandling = NullValueHandling.Ignore)]
+        public string Building { get; }
+
+        public static FarmCommand BuildTown(int revision, string building)
+        {
+            if (building != "road" && building != "cottage")
+                throw new ArgumentOutOfRangeException(nameof(building));
+            return new FarmCommand("build_town", revision, building: building);
+        }
 
         public static FarmCommand BuyAnimal(int revision, string species)
         {
