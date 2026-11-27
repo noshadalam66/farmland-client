@@ -57,7 +57,8 @@ the starter farm. Buy goats or chickens with farm coins, feed each animal
 one wheat, and collect the product after the server countdown. The roster
 and product inventory are saved to the account. With migration 000010,
 open **Breeding** to choose parents, follow the countdown, and collect the
-offspring. The roster shows the saved parent identifiers for each offspring.
+offspring. Open **Family tree** under **Livestock** and select an animal to
+follow its recorded maternal and paternal branches.
 
 With migration 000011, open **Grain mill** to buy the building, start a wheat
 batch, collect flour after the countdown, and sell it at the server price.
