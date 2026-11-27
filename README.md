@@ -131,7 +131,9 @@ counts. Terrain mode continues to show the geographic pilot separately.
 
 With migration 000014, the panel also supports a water tower, workshops,
 schools, and clinics and displays server-calculated service coverage and
-wellbeing. The extra services are shown in the panel.
+wellbeing. Regenerate the starter scene to show saved service buildings
+in fixed slots along the other side of the farm. The game panel scrolls
+when expanded controls exceed the available height.
 
 ## Reproducible pilot builds
 

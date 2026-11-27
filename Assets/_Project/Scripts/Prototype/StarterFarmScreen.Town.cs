@@ -9,6 +9,7 @@ namespace FarmLand.Empire.Prototype
     {
         [SerializeField] private GameObject roadGeometry;
         [SerializeField] private GameObject[] cottageGeometry;
+        [SerializeField] private Transform townServiceGeometry;
 
         private Foldout townPanel;
         private Label townSummary;
@@ -53,6 +54,7 @@ namespace FarmLand.Empire.Prototype
             if (cottageGeometry != null)
                 for (int i = 0; i < cottageGeometry.Length; i++)
                     if (cottageGeometry[i] != null) SetVisible(cottageGeometry[i], i < cottages);
+            RenderServiceGeometry(town);
             if (town == null) return;
             townSummary.text = $"Residents: {town.Residents}/{town.HousingCapacity} · Cottages: {cottages}";
             townStatus.text = farm.Expansion?.Owned != true ? "Buy the farm expansion to start a settlement."
@@ -100,6 +102,17 @@ namespace FarmLand.Empire.Prototype
                 !CanConstruct(town, kind, option)) return;
             pending = FarmCommand.BuildTown(farm.Revision, kind);
             StartCoroutine(Run(pending));
+        }
+
+        private void RenderServiceGeometry(FarmTown town)
+        {
+            if (townServiceGeometry == null) return;
+            foreach (Transform group in townServiceGeometry)
+            {
+                int count = town == null ? 0 : CountBuildings(town, group.name);
+                for (int i = 0; i < group.childCount; i++)
+                    SetVisible(group.GetChild(i).gameObject, i < count);
+            }
         }
 
         private static void SetVisible(GameObject building, bool visible)

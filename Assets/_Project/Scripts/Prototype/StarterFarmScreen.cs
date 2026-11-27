@@ -114,6 +114,7 @@ namespace FarmLand.Empire.Prototype
             var panel = new VisualElement();
             panel.style.width = Length.Percent(90);
             panel.style.maxWidth = 420;
+            panel.style.maxHeight = Length.Percent(82);
             panel.style.marginTop = 24;
             panel.style.alignSelf = Align.Center;
             panel.style.paddingTop = 16;
@@ -135,7 +136,9 @@ namespace FarmLand.Empire.Prototype
             signIn.Add(password);
             signIn.Add(new Button(BeginSignIn) { text = "Sign in" });
 
-            controls = new VisualElement();
+            controls = new ScrollView(ScrollViewMode.Vertical);
+            controls.style.flexShrink = 1;
+            controls.style.minHeight = 0;
             panel.Add(controls);
             plot = new Label();
             controls.Add(plot);
@@ -175,6 +178,7 @@ namespace FarmLand.Empire.Prototype
             BuildLeaderboardPanel();
             status = new Label();
             status.style.whiteSpace = WhiteSpace.Normal;
+            status.style.flexShrink = 0;
             panel.Add(status);
         }
 
