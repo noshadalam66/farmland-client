@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using FarmLand.Empire.Networking;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -12,8 +13,13 @@ namespace FarmLand.Empire.Prototype
         private Foldout townPanel;
         private Label townSummary;
         private Label townStatus;
-        private Button buildRoad;
-        private Button buildCottage;
+        private Label townServices;
+        private readonly Dictionary<string, Button> constructionButtons = new Dictionary<string, Button>();
+        private static readonly (string Kind, string Name)[] buildingLabels =
+        {
+            ("road", "road"), ("cottage", "cottage"), ("water_tower", "water tower"),
+            ("workshop", "workshop"), ("school", "school"), ("clinic", "clinic"),
+        };
 
         private void BuildTownPanel()
         {
@@ -21,11 +27,18 @@ namespace FarmLand.Empire.Prototype
             townSummary = new Label();
             townStatus = new Label();
             townStatus.style.whiteSpace = WhiteSpace.Normal;
-            buildRoad = new Button(() => BuildTown("road"));
-            buildCottage = new Button(() => BuildTown("cottage"));
+            townServices = new Label();
+            townServices.style.whiteSpace = WhiteSpace.Normal;
             townPanel.Add(townSummary);
-            townPanel.Add(buildRoad);
-            townPanel.Add(buildCottage);
+            townPanel.Add(townServices);
+            constructionButtons.Clear();
+            foreach (var entry in buildingLabels)
+            {
+                string kind = entry.Kind;
+                var button = new Button(() => BuildTown(kind));
+                constructionButtons.Add(kind, button);
+                townPanel.Add(button);
+            }
             townPanel.Add(townStatus);
             controls.Add(townPanel);
         }
@@ -47,8 +60,13 @@ namespace FarmLand.Empire.Prototype
                 : town.Residents < town.HousingCapacity ? "Residents arrive over time. Refresh farm to check arrivals."
                 : string.Empty;
 
-            RenderBuildingOption(town, "road", "road", buildRoad);
-            RenderBuildingOption(town, "cottage", "cottage", buildCottage);
+            townServices.style.display = town.Served == null ? DisplayStyle.None : DisplayStyle.Flex;
+            if (town.Served != null)
+                townServices.text = $"Water: {town.Served.Water}/{town.Residents} · Jobs: {town.Served.Jobs}/{town.Residents}\n" +
+                    $"School: {town.Served.Education}/{town.Residents} · Clinic: {town.Served.Health}/{town.Residents} · Wellbeing: {town.Wellbeing}%";
+
+            foreach (var entry in buildingLabels)
+                RenderBuildingOption(town, entry.Kind, entry.Name, constructionButtons[entry.Kind]);
         }
 
         private void RenderBuildingOption(FarmTown town, string kind, string name, Button button)
@@ -56,14 +74,24 @@ namespace FarmLand.Empire.Prototype
             bool available = town.Catalog.TryGetValue(kind, out TownBuildingOption option);
             button.style.display = available ? DisplayStyle.Flex : DisplayStyle.None;
             if (!available) return;
-            button.text = $"Build {name} · {option.Price} coins";
+            string prerequisite = RequiredBuilding(kind, option);
+            button.text = prerequisite != null && CountBuildings(town, prerequisite) == 0
+                ? $"Build {name} · needs a {prerequisite}"
+                : $"Build {name} · {option.Price} coins";
             button.SetEnabled(CanConstruct(town, kind, option));
         }
 
-        private bool CanConstruct(FarmTown town, string kind, TownBuildingOption option) =>
-            !busy && !reloadRequired && pending == null && farm.Expansion?.Owned == true &&
-            farm.Wallet != null && option.Price > 0 && farm.Wallet.Coins >= option.Price &&
-            CountBuildings(town, kind) < option.Limit && (kind != "cottage" || CountBuildings(town, "road") > 0);
+        private bool CanConstruct(FarmTown town, string kind, TownBuildingOption option)
+        {
+            string prerequisite = RequiredBuilding(kind, option);
+            return !busy && !reloadRequired && pending == null && farm.Expansion?.Owned == true &&
+                farm.Wallet != null && option.Price > 0 && farm.Wallet.Coins >= option.Price &&
+                CountBuildings(town, kind) < option.Limit &&
+                (prerequisite == null || CountBuildings(town, prerequisite) > 0);
+        }
+
+        private static string RequiredBuilding(string kind, TownBuildingOption option) =>
+            option.Requires ?? (kind == "cottage" ? "road" : null);
 
         private void BuildTown(string kind)
         {

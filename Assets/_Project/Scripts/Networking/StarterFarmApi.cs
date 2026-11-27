@@ -244,7 +244,8 @@ namespace FarmLand.Empire.Networking
 
         public static FarmCommand BuildTown(int revision, string building)
         {
-            if (building != "road" && building != "cottage")
+            if (building != "road" && building != "cottage" && building != "water_tower" &&
+                building != "workshop" && building != "school" && building != "clinic")
                 throw new ArgumentOutOfRangeException(nameof(building));
             return new FarmCommand("build_town", revision, building: building);
         }
