@@ -171,6 +171,7 @@ namespace FarmLand.Empire.Prototype
             controls.Add(farmHint);
             BuildLivestockPanel();
             BuildMillPanel();
+            BuildLeaderboardPanel();
             status = new Label();
             status.style.whiteSpace = WhiteSpace.Normal;
             panel.Add(status);
@@ -220,6 +221,7 @@ namespace FarmLand.Empire.Prototype
             reloadRequired = false;
             refreshOnResume = false;
             busy = false;
+            ClearLeaderboard();
             if (password != null) password.value = string.Empty;
             if (status != null) status.text = string.Empty;
             if (session != null) Render();
