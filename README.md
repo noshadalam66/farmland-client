@@ -45,3 +45,16 @@ The scene generator creates a fixed isometric test map. Authentication uses
 Firebase's email/password and token exchange REST endpoints. Sessions are
 kept in memory for this prototype. Closing the app requires signing in again,
 and signing in reloads the saved farm from the server.
+
+## Phase 2 terrain preview
+
+Generate a pilot terrain package with the GDAL exporter in `farmland-api`.
+In Unity, choose **FarmLand → Preview Terrain Package** and open its
+`manifest.json`. The editor opens a temporary preview scene with a mesh for
+each chunk. The meshes are generated in memory and intended for inspection
+in the Scene view. Reopen the manifest to regenerate the preview.
+
+The runtime mesh builder maps east to Unity X and north to Unity Z, with
+elevation as Unity Y in meters. Adjacent meshes place shared edge samples
+at the same coordinates. The current preview calculates lighting normals
+per mesh, so lighting can differ along chunk boundaries.
