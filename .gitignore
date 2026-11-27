@@ -13,3 +13,5 @@
 *.keystore
 *.p12
 *.mobileprovision
+/Assets/_FarmLandPilotBuild_*/
+/Assets/_FarmLandPilotBuild_*.meta

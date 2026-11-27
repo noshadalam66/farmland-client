@@ -119,3 +119,27 @@ terrain worker uses the separately sourced elevation and water datasets.
 
 The picker opens at the San Francisco pilot center. Android and iOS use the
 coordinate fields in this build.
+
+## Reproducible pilot builds
+
+Use a licensed Unity 6.3 editor with the target's build support installed.
+Set `FARMLAND_API_ORIGIN` and `FARMLAND_FIREBASE_WEB_API_KEY`. For the Web map
+picker, optionally set `FARMLAND_GOOGLE_MAPS_BROWSER_KEY`. Use public client
+configuration values and keep service credentials on the backend.
+
+From the client checkout, run the Unity executable. Replace `WebGL` with
+`Android` for a test APK, or `iOS` for an Xcode project.
+
+```sh
+"$UNITY_EDITOR" -batchmode -quit -projectPath "$PWD" -buildTarget WebGL \
+  -executeMethod FarmLand.Empire.Editor.PilotBuild.Build -logFile -
+```
+
+Each run uses an isolated directory under `Builds/Pilot/`. The build creates
+its configured starter scene temporarily, then removes it from the project.
+For web, serve the output on the origin configured in the API's `WEB_ORIGIN`.
+For iOS, use macOS and Xcode to sign and install the exported project.
+
+Use a test account on all three builds. Plant on Android, verify the same
+plot and countdown on web, harvest on iOS, then reopen Android and verify
+one unit was credited. Run the test on a farm with an empty selected plot.

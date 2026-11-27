@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using FarmLand.Empire.Prototype;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -23,6 +25,11 @@ namespace FarmLand.Empire.Editor
                 return;
             }
 
+            CreateAt(path);
+        }
+
+        internal static void CreateAt(string path, Action<SerializedObject> configure = null)
+        {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             string assetPrefix = path.Substring(0, path.Length - ".unity".Length);
             var camera = new GameObject("Isometric Camera", typeof(Camera)).GetComponent<Camera>();
@@ -65,7 +72,9 @@ namespace FarmLand.Empire.Editor
                 CreateMaterial(new Color(0.12f, 0.41f, 0.64f), assetPrefix + " Water.mat");
             controller.ApplyModifiedPropertiesWithoutUndo();
             AddExpansionPreview(controller, cropMarker.transform.parent, assetPrefix);
-            EditorSceneManager.SaveScene(scene, path);
+            configure?.Invoke(controller);
+            if (!EditorSceneManager.SaveScene(scene, path))
+                throw new IOException("Could not save the generated starter farm scene.");
             AssetDatabase.SaveAssets();
             Selection.activeGameObject = screen;
         }
