@@ -31,6 +31,27 @@ namespace FarmLand.Empire.Networking
 
         [JsonProperty("livestock")]
         public FarmLivestock Livestock { get; private set; }
+
+        [JsonProperty("mill")]
+        public FarmMill Mill { get; private set; }
+    }
+
+    public sealed class FarmMill
+    {
+        [JsonProperty("owned", Required = Required.Always)]
+        public bool Owned { get; private set; }
+
+        [JsonProperty("price", Required = Required.Always)]
+        public int Price { get; private set; }
+
+        [JsonProperty("readyAt", Required = Required.AllowNull)]
+        public DateTimeOffset? ReadyAt { get; private set; }
+
+        [JsonProperty("wheatPerBatch", Required = Required.Always)]
+        public int WheatPerBatch { get; private set; }
+
+        [JsonProperty("flourPrice", Required = Required.Always)]
+        public int FlourPrice { get; private set; }
     }
 
     public sealed class FarmLivestock
@@ -125,6 +146,9 @@ namespace FarmLand.Empire.Networking
         [JsonProperty("eggs")]
         public int? Eggs { get; private set; }
 
+        [JsonProperty("flour")]
+        public int? Flour { get; private set; }
+
         public bool HasCropVariety => Corn.HasValue && Rice.HasValue;
 
         public int Count(string crop) => crop switch
@@ -191,6 +215,11 @@ namespace FarmLand.Empire.Networking
             new FarmCommand("harvest", revision, plotId: expansion ? "expansion" : null);
 
         public static FarmCommand BuyParcel(int revision) => new FarmCommand("buy_parcel", revision);
+
+        public static FarmCommand BuyMill(int revision) => new FarmCommand("buy_mill", revision);
+        public static FarmCommand StartMilling(int revision) => new FarmCommand("start_milling", revision);
+        public static FarmCommand CollectFlour(int revision) => new FarmCommand("collect_flour", revision);
+        public static FarmCommand SellFlour(int revision) => new FarmCommand("sell_flour", revision);
 
         [JsonProperty("species", NullValueHandling = NullValueHandling.Ignore)]
         public string Species { get; }

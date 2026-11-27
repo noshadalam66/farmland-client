@@ -59,6 +59,9 @@ and product inventory are saved to the account. With migration 000010,
 open **Breeding** to choose parents, follow the countdown, and collect the
 offspring. The roster shows the saved parent identifiers for each offspring.
 
+With migration 000011, open **Grain mill** to buy the building, start a wheat
+batch, collect flour after the countdown, and sell it at the server price.
+
 The scene generator creates a fixed isometric test map. Authentication uses
 Firebase's email/password and token exchange REST endpoints. Sessions are
 kept in memory for this prototype. Closing the app requires signing in again,

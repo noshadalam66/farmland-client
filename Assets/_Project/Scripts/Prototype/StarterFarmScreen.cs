@@ -166,6 +166,7 @@ namespace FarmLand.Empire.Prototype
             farmHint.style.whiteSpace = WhiteSpace.Normal;
             controls.Add(farmHint);
             BuildLivestockPanel();
+            BuildMillPanel();
             status = new Label();
             status.style.whiteSpace = WhiteSpace.Normal;
             panel.Add(status);
@@ -274,6 +275,7 @@ namespace FarmLand.Empire.Prototype
                 (!reloadRequired && farm != null && remaining <= 0)));
             refresh.SetEnabled(!busy && pending == null);
             RenderLivestock();
+            RenderMill();
 
             bool marketAvailable = farm?.Wallet != null && farm.Market != null;
             marketPanel.style.display = marketAvailable ? DisplayStyle.Flex : DisplayStyle.None;
@@ -425,6 +427,12 @@ namespace FarmLand.Empire.Prototype
                 "breeding_in_progress" => "A breeding timer is already running.",
                 "breeding_not_started" => "Start breeding before collecting an offspring.",
                 "offspring_not_ready" => "The offspring is still in progress.",
+                "mill_already_owned" => "The grain mill is already owned.",
+                "mill_not_owned" => "Buy the grain mill first.",
+                "mill_busy" => "Collect the current batch before starting another.",
+                "mill_idle" => "Start a wheat batch first.",
+                "flour_not_ready" => "The flour is still in progress.",
+                "insufficient_flour" => "There is no flour left to sell.",
                 _ => "The action was rejected. The latest farm state is shown.",
             };
         }
