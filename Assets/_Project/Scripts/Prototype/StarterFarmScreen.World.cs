@@ -234,6 +234,7 @@ namespace FarmLand.Empire.Prototype
             if (package == null) yield break;
 
             var view = new GameObject("Pilot Terrain");
+            terrainView = view;
             view.transform.SetParent(transform, false);
             var meshes = view.AddComponent<TerrainMeshLifetime>();
             float scale = 8f / (1000f * package.ChunksPerAxis);
@@ -294,7 +295,6 @@ namespace FarmLand.Empire.Prototype
                     }
                 }
 
-                terrainView = view;
                 completed = true;
                 worldStatus.text = "Terrain loaded.";
                 var sources = new List<string>();
@@ -308,9 +308,7 @@ namespace FarmLand.Empire.Prototype
             {
                 if (!completed)
                 {
-                    view.SetActive(false);
-                    Destroy(view);
-                    fixedFarm.SetActive(true);
+                    ClearTerrainView(clearDetails: false);
                 }
             }
         }
@@ -344,13 +342,17 @@ namespace FarmLand.Empire.Prototype
             complete(401, Array.Empty<byte>());
         }
 
-        private void ClearTerrainView()
+        private void ClearTerrainView(bool clearDetails = true)
         {
             nextWorldCheck = null;
             ClosePilotMap();
-            if (savedWorldLocation != null) savedWorldLocation.text = string.Empty;
-            if (terrainSources != null) terrainSources.text = string.Empty;
-            if (terrainView != null) Destroy(terrainView);
+            if (clearDetails && savedWorldLocation != null) savedWorldLocation.text = string.Empty;
+            if (clearDetails && terrainSources != null) terrainSources.text = string.Empty;
+            if (terrainView != null)
+            {
+                terrainView.SetActive(false);
+                Destroy(terrainView);
+            }
             terrainView = null;
             if (fixedFarm != null) fixedFarm.SetActive(true);
         }
