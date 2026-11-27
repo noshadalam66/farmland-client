@@ -83,6 +83,7 @@ namespace FarmLand.Empire.Prototype
         private void Update()
         {
             if (session != null) Render();
+            RefreshExpiredTownOrders();
             CheckPilotMap();
         }
 
@@ -418,6 +419,7 @@ namespace FarmLand.Empire.Prototype
         {
             farm = state;
             receivedAt = Time.realtimeSinceStartupAsDouble;
+            nextTownOrderRefresh = 0;
             reloadRequired = false;
         }
 

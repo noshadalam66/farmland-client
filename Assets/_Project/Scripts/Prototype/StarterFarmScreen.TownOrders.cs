@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
 using FarmLand.Empire.Networking;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace FarmLand.Empire.Prototype
 {
     public sealed partial class StarterFarmScreen
     {
+        private const double TownOrderRefreshRetrySeconds = 30;
+        private double nextTownOrderRefresh;
         private Foldout townOrdersPanel;
         private Label townOrdersDate;
         private VisualElement townOrderRows;
@@ -32,7 +35,9 @@ namespace FarmLand.Empire.Prototype
             townOrdersPanel.style.display = orders == null ? DisplayStyle.None : DisplayStyle.Flex;
             if (orders == null) return;
 
-            townOrdersDate.text = $"{orders.Date} UTC";
+            townOrdersDate.text = TownOrderDayEnded()
+                ? "A new order day has started. Refresh for the latest offers."
+                : $"{orders.Date} UTC";
             if (!ReferenceEquals(orders.Offers, displayedOrders))
             {
                 displayedOrders = orders.Offers;
@@ -56,10 +61,29 @@ namespace FarmLand.Empire.Prototype
             }
         }
 
+        private bool TownOrderDayEnded()
+        {
+            double elapsed = Time.realtimeSinceStartupAsDouble - receivedAt;
+            DateTimeOffset utc = farm.ServerTime.ToUniversalTime();
+            return elapsed >= (utc.Date.AddDays(1) - utc.UtcDateTime).TotalSeconds;
+        }
+
+        private void RefreshExpiredTownOrders()
+        {
+            if (farm?.TownOrders == null || townOrdersPanel?.value != true ||
+                busy || reloadRequired || pending != null || session?.SignedIn != true) return;
+
+            double now = Time.realtimeSinceStartupAsDouble;
+            if (now < nextTownOrderRefresh || !TownOrderDayEnded()) return;
+
+            nextTownOrderRefresh = now + TownOrderRefreshRetrySeconds;
+            StartCoroutine(Run(null));
+        }
+
         private bool CanFulfilOrder(TownOrderOffer offer)
         {
             if (busy || reloadRequired || pending != null || farm?.TownOrders == null ||
-                !offer.Unlocked || offer.Fulfilled || offer.Quantity <= 0) return false;
+                TownOrderDayEnded() || !offer.Unlocked || offer.Fulfilled || offer.Quantity <= 0) return false;
             int stock = offer.Item switch
             {
                 "wheat" => farm.Inventory.Wheat,
