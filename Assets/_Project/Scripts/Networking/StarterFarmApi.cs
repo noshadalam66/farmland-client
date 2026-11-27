@@ -25,6 +25,21 @@ namespace FarmLand.Empire.Networking
 
         [JsonProperty("market")]
         public FarmMarket Market { get; private set; }
+
+        [JsonProperty("expansion")]
+        public FarmExpansion Expansion { get; private set; }
+    }
+
+    public sealed class FarmExpansion
+    {
+        [JsonProperty("owned", Required = Required.Always)]
+        public bool Owned { get; private set; }
+
+        [JsonProperty("price", Required = Required.Always)]
+        public int Price { get; private set; }
+
+        [JsonProperty("plot", Required = Required.AllowNull)]
+        public FarmPlot Plot { get; private set; }
     }
 
     public sealed class FarmWallet
@@ -75,13 +90,14 @@ namespace FarmLand.Empire.Networking
 
     public sealed class FarmCommand
     {
-        private FarmCommand(string action, int expectedRevision, string crop = null)
+        private FarmCommand(string action, int expectedRevision, string crop = null, string plotId = null)
         {
             if (expectedRevision < 0)
                 throw new ArgumentOutOfRangeException(nameof(expectedRevision));
 
             Action = action;
             Crop = crop;
+            PlotId = plotId;
             ExpectedRevision = expectedRevision;
             CommandId = Guid.NewGuid();
         }
@@ -98,14 +114,20 @@ namespace FarmLand.Empire.Networking
         [JsonProperty("crop", NullValueHandling = NullValueHandling.Ignore)]
         public string Crop { get; }
 
-        public static FarmCommand Plant(int revision, string crop = null)
+        [JsonProperty("plotId", NullValueHandling = NullValueHandling.Ignore)]
+        public string PlotId { get; }
+
+        public static FarmCommand Plant(int revision, string crop = null, bool expansion = false)
         {
             if (crop != null && crop != "wheat" && crop != "corn" && crop != "rice")
                 throw new ArgumentOutOfRangeException(nameof(crop));
 
-            return new FarmCommand("plant", revision, crop);
+            return new FarmCommand("plant", revision, crop, expansion ? "expansion" : null);
         }
-        public static FarmCommand Harvest(int revision) => new FarmCommand("harvest", revision);
+        public static FarmCommand Harvest(int revision, bool expansion = false) =>
+            new FarmCommand("harvest", revision, plotId: expansion ? "expansion" : null);
+
+        public static FarmCommand BuyParcel(int revision) => new FarmCommand("buy_parcel", revision);
 
         public static FarmCommand Sell(int revision, string crop)
         {
