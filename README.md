@@ -28,15 +28,16 @@ the plot, server countdown, and wheat inventory.
 
 ## Phase 1 farm prototype
 
-1. Enable the Email/Password provider in Firebase Authentication and provision
-   a test user. Use one Firebase project for the client and API.
+1. Enable the Email/Password provider in Firebase Authentication. Use one
+   Firebase project for the client and API.
 2. Start the farm API with the merged database migrations and Firebase project
    settings. Set `WEB_ORIGIN` on the API for a browser build.
 3. In Unity, choose **FarmLand → Create Starter Farm Scene**. On the selected
    **Starter Farm Screen** object, set the API origin and Firebase Web API key.
    Use an HTTPS API origin for devices. Loopback HTTP is supported by the client
    for local testing where Unity platform settings allow it.
-4. Enter Play Mode and sign in. Plant wheat, wait for the server countdown,
+4. Enter Play Mode and choose **Create account** with an unused email, or
+   choose **Sign in** with an existing account. Plant wheat, wait for the server countdown,
    harvest, and refresh to see the confirmed inventory.
 5. Add the generated scene to the build profiles for Android, iOS, and Web.
    Use the same account across all three to check farm handoff.
