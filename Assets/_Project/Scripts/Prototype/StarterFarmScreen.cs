@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using FarmLand.Empire.Networking;
 using FarmLand.Empire.Session;
 using UnityEngine;
@@ -13,6 +14,8 @@ namespace FarmLand.Empire.Prototype
         [SerializeField] private string apiOrigin = "https://farm-api.example.com";
         [SerializeField] private string firebaseWebApiKey;
         [SerializeField] private GameObject cropMarker;
+        [SerializeField] private GameObject expansionGeometry;
+        [SerializeField] private GameObject expansionCropMarker;
 
         private StarterFarmApi api;
         private string worldOrigin;
@@ -29,6 +32,14 @@ namespace FarmLand.Empire.Prototype
         private TextField password;
         private Label status;
         private Label plot;
+        private Label inventory;
+        private DropdownField cropSelector;
+        private DropdownField plotSelector;
+        private Button purchaseParcel;
+        private VisualElement marketPanel;
+        private Label wallet;
+        private Label farmHint;
+        private readonly Dictionary<string, Button> saleButtons = new Dictionary<string, Button>();
         private Button action;
         private Button refresh;
 
@@ -128,13 +139,36 @@ namespace FarmLand.Empire.Prototype
             panel.Add(controls);
             plot = new Label();
             controls.Add(plot);
+            plotSelector = new DropdownField("Plot", new List<string> { "Starter", "Expansion" }, 0);
+            controls.Add(plotSelector);
+            purchaseParcel = new Button(BuyParcel);
+            controls.Add(purchaseParcel);
+            inventory = new Label();
+            inventory.style.whiteSpace = WhiteSpace.Normal;
+            controls.Add(inventory);
+            cropSelector = new DropdownField("Crop", new List<string> { "Wheat", "Corn", "Rice" }, 0);
+            controls.Add(cropSelector);
             action = new Button(SubmitAction);
             controls.Add(action);
+            marketPanel = new VisualElement();
+            controls.Add(marketPanel);
+            wallet = new Label();
+            marketPanel.Add(wallet);
+            saleButtons.Clear();
+            foreach (string crop in new[] { "wheat", "corn", "rice" })
+            {
+                var sell = new Button(() => SellCrop(crop));
+                saleButtons.Add(crop, sell);
+                marketPanel.Add(sell);
+            }
             refresh = new Button(() => StartCoroutine(Run(null))) { text = "Refresh farm" };
             controls.Add(refresh);
             BuildWorldControls();
             controls.Add(new Button(SignOut) { text = "Sign out" });
 
+            farmHint = new Label();
+            farmHint.style.whiteSpace = WhiteSpace.Normal;
+            controls.Add(farmHint);
             status = new Label();
             status.style.whiteSpace = WhiteSpace.Normal;
             panel.Add(status);
@@ -179,6 +213,7 @@ namespace FarmLand.Empire.Prototype
             if (worldPanel != null) worldPanel.style.display = DisplayStyle.None;
             selectionKey = null;
             farm = null;
+            if (plotSelector != null) plotSelector.index = 0;
             pending = null;
             reloadRequired = false;
             refreshOnResume = false;
@@ -188,11 +223,16 @@ namespace FarmLand.Empire.Prototype
             if (session != null) Render();
         }
 
+        private bool ExpansionSelected => farm?.Expansion?.Owned == true && plotSelector.index == 1;
+
+        private FarmPlot SelectedPlot => ExpansionSelected ? farm.Expansion.Plot : farm?.Plot;
+
         private double RemainingSeconds()
         {
-            if (farm?.Plot == null) return 0;
+            FarmPlot selected = SelectedPlot;
+            if (selected == null) return 0;
             double elapsed = Time.realtimeSinceStartupAsDouble - receivedAt;
-            return Math.Max(0, (farm.Plot.ReadyAt - farm.ServerTime).TotalSeconds - elapsed);
+            return Math.Max(0, (selected.ReadyAt - farm.ServerTime).TotalSeconds - elapsed);
         }
 
         private void Render()
@@ -204,13 +244,85 @@ namespace FarmLand.Empire.Prototype
             signIn.SetEnabled(!busy);
             controls.SetEnabled(!busy);
             double remaining = RemainingSeconds();
-            plot.text = farm == null ? (busy ? "Loading farm…" : "Farm unavailable") : farm.Plot == null
-                ? $"Empty plot · Wheat: {farm.Inventory.Wheat}"
-                : $"Wheat: {farm.Inventory.Wheat} · " + (remaining > 0 ? $"Ready in {Math.Ceiling(remaining)}s" : "Ready to harvest");
-            action.text = pending != null ? "Retry action" : farm?.Plot == null ? "Plant wheat" : "Harvest";
+            bool canChooseCrop = farm?.Inventory.HasCropVariety == true;
+            FarmPlot selected = SelectedPlot;
+            bool emptyPlot = farm != null && selected == null;
+            bool expansionOwned = farm?.Expansion?.Owned == true;
+            if (expansionGeometry != null) expansionGeometry.SetActive(signedIn && expansionOwned);
+            if (expansionCropMarker != null)
+                expansionCropMarker.SetActive(signedIn && expansionOwned && farm.Expansion.Plot != null);
+
+            farmHint.text = FarmHint(remaining);
+            farmHint.style.display = string.IsNullOrEmpty(farmHint.text) ? DisplayStyle.None : DisplayStyle.Flex;
+            plotSelector.style.display = expansionOwned ? DisplayStyle.Flex : DisplayStyle.None;
+            plotSelector.SetEnabled(!busy && pending == null);
+
+            bool canBuy = farm?.Expansion != null && !expansionOwned && farm.Wallet != null;
+            purchaseParcel.style.display = canBuy ? DisplayStyle.Flex : DisplayStyle.None;
+            if (canBuy)
+            {
+                purchaseParcel.text = $"Buy expansion · {farm.Expansion.Price} coins";
+                purchaseParcel.SetEnabled(!busy && !reloadRequired && pending == null &&
+                    farm.Wallet.Coins >= farm.Expansion.Price);
+            }
+            cropSelector.style.display = canChooseCrop && emptyPlot ? DisplayStyle.Flex : DisplayStyle.None;
+            cropSelector.SetEnabled(!busy && !reloadRequired && pending == null);
+            inventory.text = farm == null ? string.Empty : canChooseCrop
+                ? $"Wheat: {farm.Inventory.Wheat} · Corn: {farm.Inventory.Corn} · Rice: {farm.Inventory.Rice}"
+                : $"Wheat: {farm.Inventory.Wheat}";
+
+            plot.text = farm == null ? (busy ? "Loading farm…" : "Farm unavailable") : emptyPlot
+                ? "Empty plot"
+                : remaining > 0 ? $"{CropLabel(selected.Crop)} · Ready in {Math.Ceiling(remaining)}s"
+                : $"{CropLabel(selected.Crop)} · Ready to harvest";
+            action.text = pending != null ? "Retry action" : selected == null ? "Plant" : "Harvest";
             action.SetEnabled(!busy && (pending != null ||
                 (!reloadRequired && farm != null && remaining <= 0)));
             refresh.SetEnabled(!busy && pending == null);
+
+            bool marketAvailable = farm?.Wallet != null && farm.Market != null;
+            marketPanel.style.display = marketAvailable ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!marketAvailable) return;
+            wallet.text = $"Coins: {farm.Wallet.Coins}";
+            foreach (var entry in saleButtons)
+            {
+                int price = farm.Market.SellPrices.Count(entry.Key);
+                entry.Value.text = $"Sell {CropLabel(entry.Key)} · {price} coins";
+                entry.Value.SetEnabled(!busy && !reloadRequired && pending == null &&
+                    price > 0 && farm.Inventory.Count(entry.Key) > 0);
+            }
+        }
+
+        private string FarmHint(double remaining)
+        {
+            if (busy || reloadRequired || pending != null || farm?.Expansion == null || farm.Expansion.Owned)
+                return string.Empty;
+            if (farm.Wallet != null && farm.Wallet.Coins >= farm.Expansion.Price)
+                return "Buy the expansion to unlock a second plot.";
+            if (farm.Inventory.Wheat > 0 || farm.Inventory.Count("corn") > 0 || farm.Inventory.Count("rice") > 0)
+                return "Sell harvested crops to earn coins for the expansion.";
+            if (farm.Plot == null) return "Choose a crop and plant it in the starter plot.";
+            return remaining > 0
+                ? "Your crop keeps growing while you're away."
+                : "Harvest the crop to add it to your inventory.";
+        }
+
+        private void BuyParcel()
+        {
+            if (busy || reloadRequired || pending != null || farm?.Expansion == null ||
+                farm.Expansion.Owned || farm.Wallet == null || farm.Wallet.Coins < farm.Expansion.Price) return;
+
+            pending = FarmCommand.BuyParcel(farm.Revision);
+            StartCoroutine(Run(pending));
+        }
+
+        private void SellCrop(string crop)
+        {
+            if (busy || reloadRequired || pending != null || farm?.Market == null ||
+                farm.Inventory.Count(crop) < 1 || farm.Market.SellPrices.Count(crop) < 1) return;
+
+            pending = FarmCommand.Sell(farm.Revision, crop);
+            StartCoroutine(Run(pending));
         }
 
         private void SubmitAction()
@@ -219,9 +331,19 @@ namespace FarmLand.Empire.Prototype
                 (pending == null && RemainingSeconds() > 0)) return;
 
             bool retry = pending != null;
-            pending ??= farm.Plot == null ? FarmCommand.Plant(farm.Revision) : FarmCommand.Harvest(farm.Revision);
+            pending ??= SelectedPlot == null
+                ? FarmCommand.Plant(farm.Revision, farm.Inventory.HasCropVariety ? cropSelector.value.ToLowerInvariant() : null,
+                    ExpansionSelected)
+                : FarmCommand.Harvest(farm.Revision, ExpansionSelected);
             StartCoroutine(Run(pending, retry));
         }
+
+        private static string CropLabel(string crop) => crop switch
+        {
+            "corn" => "Corn",
+            "rice" => "Rice",
+            _ => "Wheat",
+        };
 
         private IEnumerator Run(FarmCommand command, bool retry = false)
         {
@@ -295,6 +417,10 @@ namespace FarmLand.Empire.Prototype
                 "crop_not_ready" => "The crop is still growing.",
                 "plot_occupied" => "This plot already has a crop.",
                 "plot_empty" => "There is no crop to harvest.",
+                "insufficient_crop" => "There is no stock left to sell.",
+                "insufficient_coins" => "Earn more coins by selling crops.",
+                "parcel_already_owned" => "The expansion is already owned.",
+                "parcel_not_owned" => "Buy the expansion before planting there.",
                 _ => "The action was rejected. The latest farm state is shown.",
             };
         }

@@ -19,16 +19,68 @@ namespace FarmLand.Empire.Networking
 
         [JsonProperty("plot", Required = Required.AllowNull)]
         public FarmPlot Plot { get; private set; }
+
+        [JsonProperty("wallet")]
+        public FarmWallet Wallet { get; private set; }
+
+        [JsonProperty("market")]
+        public FarmMarket Market { get; private set; }
+
+        [JsonProperty("expansion")]
+        public FarmExpansion Expansion { get; private set; }
+    }
+
+    public sealed class FarmExpansion
+    {
+        [JsonProperty("owned", Required = Required.Always)]
+        public bool Owned { get; private set; }
+
+        [JsonProperty("price", Required = Required.Always)]
+        public int Price { get; private set; }
+
+        [JsonProperty("plot", Required = Required.AllowNull)]
+        public FarmPlot Plot { get; private set; }
+    }
+
+    public sealed class FarmWallet
+    {
+        [JsonProperty("coins", Required = Required.Always)]
+        public int Coins { get; private set; }
+    }
+
+    public sealed class FarmMarket
+    {
+        [JsonProperty("sellPrices", Required = Required.Always)]
+        public FarmInventory SellPrices { get; private set; }
     }
 
     public sealed class FarmInventory
     {
         [JsonProperty("wheat", Required = Required.Always)]
         public int Wheat { get; private set; }
+
+        [JsonProperty("corn")]
+        public int? Corn { get; private set; }
+
+        [JsonProperty("rice")]
+        public int? Rice { get; private set; }
+
+        public bool HasCropVariety => Corn.HasValue && Rice.HasValue;
+
+        public int Count(string crop) => crop switch
+        {
+            "wheat" => Wheat,
+            "corn" => Corn ?? 0,
+            "rice" => Rice ?? 0,
+            _ => 0,
+        };
     }
 
     public sealed class FarmPlot
     {
+        [JsonProperty("crop")]
+        public string Crop { get; private set; } = "wheat";
+
         [JsonProperty("plantedAt", Required = Required.Always)]
         public DateTimeOffset PlantedAt { get; private set; }
 
@@ -38,12 +90,14 @@ namespace FarmLand.Empire.Networking
 
     public sealed class FarmCommand
     {
-        private FarmCommand(string action, int expectedRevision)
+        private FarmCommand(string action, int expectedRevision, string crop = null, string plotId = null)
         {
             if (expectedRevision < 0)
                 throw new ArgumentOutOfRangeException(nameof(expectedRevision));
 
             Action = action;
+            Crop = crop;
+            PlotId = plotId;
             ExpectedRevision = expectedRevision;
             CommandId = Guid.NewGuid();
         }
@@ -57,8 +111,31 @@ namespace FarmLand.Empire.Networking
         [JsonProperty("action")]
         public string Action { get; }
 
-        public static FarmCommand Plant(int revision) => new FarmCommand("plant", revision);
-        public static FarmCommand Harvest(int revision) => new FarmCommand("harvest", revision);
+        [JsonProperty("crop", NullValueHandling = NullValueHandling.Ignore)]
+        public string Crop { get; }
+
+        [JsonProperty("plotId", NullValueHandling = NullValueHandling.Ignore)]
+        public string PlotId { get; }
+
+        public static FarmCommand Plant(int revision, string crop = null, bool expansion = false)
+        {
+            if (crop != null && crop != "wheat" && crop != "corn" && crop != "rice")
+                throw new ArgumentOutOfRangeException(nameof(crop));
+
+            return new FarmCommand("plant", revision, crop, expansion ? "expansion" : null);
+        }
+        public static FarmCommand Harvest(int revision, bool expansion = false) =>
+            new FarmCommand("harvest", revision, plotId: expansion ? "expansion" : null);
+
+        public static FarmCommand BuyParcel(int revision) => new FarmCommand("buy_parcel", revision);
+
+        public static FarmCommand Sell(int revision, string crop)
+        {
+            if (crop != "wheat" && crop != "corn" && crop != "rice")
+                throw new ArgumentOutOfRangeException(nameof(crop));
+
+            return new FarmCommand("sell", revision, crop);
+        }
     }
 
     public sealed class FarmResult

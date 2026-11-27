@@ -64,9 +64,28 @@ namespace FarmLand.Empire.Editor
             controller.FindProperty("waterMaterial").objectReferenceValue =
                 CreateMaterial(new Color(0.12f, 0.41f, 0.64f), assetPrefix + " Water.mat");
             controller.ApplyModifiedPropertiesWithoutUndo();
+            AddExpansionPreview(controller, cropMarker.transform.parent, assetPrefix);
             EditorSceneManager.SaveScene(scene, path);
             AssetDatabase.SaveAssets();
             Selection.activeGameObject = screen;
+        }
+
+        private static void AddExpansionPreview(SerializedObject controller, Transform parent, string assetPrefix)
+        {
+            var expansion = new GameObject("Expansion Plot");
+            expansion.transform.SetParent(parent, false);
+            GameObject soil = CreateTile("Expansion Soil", new Vector3(2.65f, 0, 0), new Vector3(2.5f, 0.3f, 2.5f),
+                new Color(0.47f, 0.28f, 0.17f), assetPrefix + " Expansion Soil.mat");
+            GameObject crop = CreateTile("Expansion Crop", new Vector3(2.65f, 0.42f, 0), new Vector3(1.6f, 0.5f, 1.6f),
+                new Color(0.88f, 0.68f, 0.23f), assetPrefix + " Expansion Crop.mat");
+            soil.transform.SetParent(expansion.transform);
+            crop.transform.SetParent(expansion.transform);
+            crop.SetActive(false);
+            expansion.SetActive(false);
+
+            controller.FindProperty("expansionGeometry").objectReferenceValue = expansion;
+            controller.FindProperty("expansionCropMarker").objectReferenceValue = crop;
+            controller.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static GameObject CreateTile(string name, Vector3 center, Vector3 size, Color color, string materialPath)
