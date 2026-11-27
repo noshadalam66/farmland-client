@@ -24,6 +24,8 @@ namespace FarmLand.Empire.Prototype
         private TextField longitude;
         private DropdownField area;
         private Label worldStatus;
+        private Label savedWorldLocation;
+        private Label terrainSources;
         private GameObject terrainView;
         private string selectionKey;
         private Guid selectionId;
@@ -51,6 +53,12 @@ namespace FarmLand.Empire.Prototype
             worldStatus = new Label();
             worldStatus.style.whiteSpace = WhiteSpace.Normal;
             worldPanel.Add(worldStatus);
+            savedWorldLocation = new Label { enableRichText = false };
+            terrainSources = new Label { enableRichText = false };
+            savedWorldLocation.style.whiteSpace = WhiteSpace.Normal;
+            terrainSources.style.whiteSpace = WhiteSpace.Normal;
+            worldPanel.Add(savedWorldLocation);
+            worldPanel.Add(terrainSources);
         }
 
         private void ToggleWorld()
@@ -124,6 +132,7 @@ namespace FarmLand.Empire.Prototype
                 if (code == 404)
                 {
                     failedWorldRequestId = null;
+                    savedWorldLocation.text = string.Empty;
                     worldStatus.text = "No world selected. Enter the center of the pilot area.";
                     yield break;
                 }
@@ -153,6 +162,13 @@ namespace FarmLand.Empire.Prototype
                 string worldState = (string)world?["status"];
                 failedWorldRequestId = worldState == "failed" && Guid.TryParse((string)world["requestId"], out Guid failedId)
                     ? failedId.ToString() : null;
+
+                if (world?["latitude"] is JValue savedLatitude &&
+                    world["longitude"] is JValue savedLongitude && world["areaKm2"] is JValue savedArea)
+                {
+                    savedWorldLocation.text = FormattableString.Invariant(
+                        $"Saved area · {savedArea} km² · {savedLatitude}, {savedLongitude}");
+                }
 
                 switch (worldState)
                 {
@@ -218,6 +234,9 @@ namespace FarmLand.Empire.Prototype
                 {
                     for (int x = 0; x < package.ChunksPerAxis; x++)
                     {
+                        int tileNumber = y * package.ChunksPerAxis + x + 1;
+                        int tileCount = package.ChunksPerAxis * package.ChunksPerAxis;
+                        worldStatus.text = $"Downloading terrain tile {tileNumber} of {tileCount}…";
                         byte[] chunk = null;
                         string filename = TerrainPackage.ChunkFilename(x, y);
                         yield return WorldRequest("/v1/world/terrain/" + filename, null,
@@ -268,6 +287,12 @@ namespace FarmLand.Empire.Prototype
                 foreach (var renderer in view.GetComponentsInChildren<MeshRenderer>())
                     renderer.enabled = true;
                 worldStatus.text = "Terrain loaded.";
+                var sources = new List<string>();
+                if (!string.IsNullOrWhiteSpace(package.ElevationSource))
+                    sources.Add($"Elevation: {package.ElevationSource}");
+                if (!string.IsNullOrWhiteSpace(package.WaterSource))
+                    sources.Add($"Water: {package.WaterSource}");
+                terrainSources.text = string.Join("\n", sources);
             }
             finally
             {
@@ -308,6 +333,8 @@ namespace FarmLand.Empire.Prototype
         {
             nextWorldCheck = null;
             ClosePilotMap();
+            if (savedWorldLocation != null) savedWorldLocation.text = string.Empty;
+            if (terrainSources != null) terrainSources.text = string.Empty;
             if (terrainView != null) Destroy(terrainView);
             terrainView = null;
             if (fixedFarm != null) fixedFarm.SetActive(true);
