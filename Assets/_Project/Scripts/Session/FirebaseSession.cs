@@ -21,7 +21,7 @@ namespace FarmLand.Empire.Session
 
         public bool SignedIn => !string.IsNullOrEmpty(refreshToken);
 
-        public IEnumerator SignIn(string email, string password, Action<string> complete)
+        public IEnumerator Authenticate(string email, string password, bool createAccount, Action<string> complete)
         {
             var body = new JObject
             {
@@ -29,7 +29,8 @@ namespace FarmLand.Empire.Session
                 ["password"] = password,
                 ["returnSecureToken"] = true,
             };
-            return Exchange("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword",
+            string operation = createAccount ? "signUp" : "signInWithPassword";
+            return Exchange($"https://identitytoolkit.googleapis.com/v1/accounts:{operation}",
                 "application/json", body.ToString(), "idToken", "refreshToken", "expiresIn", complete);
         }
 

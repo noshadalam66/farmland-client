@@ -135,7 +135,8 @@ namespace FarmLand.Empire.Prototype
             password = new TextField("Password") { isPasswordField = true };
             signIn.Add(email);
             signIn.Add(password);
-            signIn.Add(new Button(BeginSignIn) { text = "Sign in" });
+            signIn.Add(new Button(() => BeginAuthentication(false)) { text = "Sign in" });
+            signIn.Add(new Button(() => BeginAuthentication(true)) { text = "Create account" });
 
             controls = new ScrollView(ScrollViewMode.Vertical);
             controls.style.flexShrink = 1;
@@ -183,9 +184,9 @@ namespace FarmLand.Empire.Prototype
             panel.Add(status);
         }
 
-        private void BeginSignIn()
+        private void BeginAuthentication(bool createAccount)
         {
-            if (busy || session == null) return;
+            if (busy || session == null || session.SignedIn) return;
             if (string.IsNullOrWhiteSpace(email.value) || string.IsNullOrEmpty(password.value))
             {
                 status.text = "Enter your email and password.";
@@ -194,21 +195,23 @@ namespace FarmLand.Empire.Prototype
 
             string secret = password.value;
             password.value = string.Empty;
-            StartCoroutine(SignIn(email.value.Trim(), secret));
+            StartCoroutine(Authenticate(email.value.Trim(), secret, createAccount));
         }
 
-        private IEnumerator SignIn(string address, string secret)
+        private IEnumerator Authenticate(string address, string secret, bool createAccount)
         {
             busy = true;
-            status.text = "Signing in…";
+            status.text = createAccount ? "Creating your account…" : "Signing in…";
             Render();
             string token = null;
-            yield return session.SignIn(address, secret, value => token = value);
+            yield return session.Authenticate(address, secret, createAccount, value => token = value);
             busy = false;
 
             if (token == null)
             {
-                status.text = "Could not sign in. Check your account and connection.";
+                status.text = createAccount
+                    ? "Could not create the account. Check your email, password, and connection. If you already have an account, sign in."
+                    : "Could not sign in. Check your account and connection.";
                 Render();
                 yield break;
             }
