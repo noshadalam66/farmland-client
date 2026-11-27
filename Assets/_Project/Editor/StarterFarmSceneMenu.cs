@@ -73,6 +73,7 @@ namespace FarmLand.Empire.Editor
             controller.ApplyModifiedPropertiesWithoutUndo();
             AddExpansionPreview(controller, cropMarker.transform.parent, assetPrefix);
             AddTownPreview(controller, fixedFarm.transform, assetPrefix);
+            AddServicePreview(controller, fixedFarm.transform, assetPrefix);
             configure?.Invoke(controller);
             if (!EditorSceneManager.SaveScene(scene, path))
                 throw new IOException("Could not save the generated starter farm scene.");
@@ -134,10 +135,66 @@ namespace FarmLand.Empire.Editor
             controller.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static GameObject TownPiece(Transform parent, string name, Vector3 localPosition,
-            Vector3 size, Material material)
+        private static void AddServicePreview(SerializedObject controller, Transform fixedFarm, string assetPrefix)
         {
-            GameObject piece = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var services = new GameObject("Town Services");
+            services.transform.SetParent(fixedFarm, false);
+            Material walls = CreateMaterial(new Color(0.75f, 0.73f, 0.63f), assetPrefix + " Service Walls.mat");
+            Material water = CreateMaterial(new Color(0.21f, 0.53f, 0.74f), assetPrefix + " Water Tower.mat");
+            Material workshop = CreateMaterial(new Color(0.64f, 0.37f, 0.21f), assetPrefix + " Workshop.mat");
+            Material school = CreateMaterial(new Color(0.37f, 0.51f, 0.73f), assetPrefix + " School.mat");
+            Material clinic = CreateMaterial(new Color(0.60f, 0.26f, 0.30f), assetPrefix + " Clinic.mat");
+
+            Transform tower = ServiceSlot(services.transform, "water_tower", new Vector3(-2.7f, 0, -2.25f));
+            TownPiece(tower, "Support", new Vector3(0, 0.27f, 0), new Vector3(0.28f, 0.36f, 0.28f),
+                walls, PrimitiveType.Cylinder);
+            TownPiece(tower, "Tank", new Vector3(0, 0.84f, 0), new Vector3(0.75f, 0.23f, 0.75f),
+                water, PrimitiveType.Cylinder);
+
+            for (int i = 0; i < 2; i++)
+            {
+                float depth = -2.25f - 1.15f * i;
+                AddServiceBuilding(services.transform, "workshop", new Vector3(-0.9f, 0, depth),
+                    new Vector3(0.92f, 0.52f, 0.70f), walls, workshop);
+                AddServiceBuilding(services.transform, "school", new Vector3(0.9f, 0, depth),
+                    new Vector3(0.92f, 0.68f, 0.70f), walls, school);
+                AddServiceBuilding(services.transform, "clinic", new Vector3(2.7f, 0, depth),
+                    new Vector3(0.92f, 0.56f, 0.70f), walls, clinic);
+            }
+            controller.FindProperty("townServiceGeometry").objectReferenceValue = services.transform;
+            controller.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static Transform ServiceSlot(Transform parent, string kind, Vector3 position)
+        {
+            Transform group = parent.Find(kind);
+            if (group == null)
+            {
+                group = new GameObject(kind).transform;
+                group.SetParent(parent, false);
+            }
+            var slot = new GameObject($"Building {group.childCount + 1}");
+            slot.transform.SetParent(group, false);
+            slot.transform.localPosition = position;
+            slot.SetActive(false);
+            return slot.transform;
+        }
+
+        private static void AddServiceBuilding(Transform parent, string kind, Vector3 position,
+            Vector3 size, Material walls, Material trim)
+        {
+            Transform slot = ServiceSlot(parent, kind, position);
+            TownPiece(slot, "Walls", new Vector3(0, size.y / 2 - 0.1f, 0), size, walls);
+            TownPiece(slot, "Roof", new Vector3(0, size.y - 0.05f, 0),
+                new Vector3(size.x + 0.07f, 0.1f, size.z + 0.08f), trim);
+            TownPiece(slot, "Door", new Vector3(0, 0.06f, -size.z / 2),
+                new Vector3(0.23f, 0.32f, 0.04f), trim);
+        }
+
+        private static GameObject TownPiece(Transform parent, string name, Vector3 localPosition,
+            Vector3 size, Material material, PrimitiveType primitive = PrimitiveType.Cube)
+        {
+            GameObject piece = GameObject.CreatePrimitive(primitive);
             piece.name = name;
             piece.transform.SetParent(parent, false);
             piece.transform.localPosition = localPosition;
