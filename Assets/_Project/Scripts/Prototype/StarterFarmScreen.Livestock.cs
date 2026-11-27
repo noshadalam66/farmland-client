@@ -33,6 +33,7 @@ namespace FarmLand.Empire.Prototype
             animalList = new ScrollView();
             animalList.style.maxHeight = 180;
             livestockPanel.Add(animalList);
+            BuildBreedingPanel();
             displayedAnimals = null;
             animalRows.Clear();
         }
@@ -54,11 +55,12 @@ namespace FarmLand.Empire.Prototype
                 int price = livestock.Prices.TryGetValue(entry.Key, out int cost) ? cost : 0;
                 entry.Value.text = $"Buy {SpeciesLabel(entry.Key)} · {price} coins";
                 entry.Value.SetEnabled(canAct && price > 0 && farm.Wallet.Coins >= price &&
-                    livestock.Animals.Length < livestock.Capacity);
+                    livestock.Animals.Length + (livestock.Breeding == null ? 0 : 1) < livestock.Capacity);
             }
 
             if (!ReferenceEquals(displayedAnimals, livestock.Animals)) RebuildAnimalRows(livestock.Animals);
             double elapsed = Time.realtimeSinceStartupAsDouble - receivedAt;
+            RenderBreeding(livestock, elapsed, canAct);
             foreach (var row in animalRows)
             {
                 bool fed = row.Animal.ProductReadyAt.HasValue;
@@ -73,13 +75,17 @@ namespace FarmLand.Empire.Prototype
 
         private void RebuildAnimalRows(FarmAnimal[] animals)
         {
+            Guid? previousFirst = AnimalAt(displayedAnimals, firstParent.index)?.AnimalId;
+            Guid? previousSecond = AnimalAt(displayedAnimals, secondParent.index)?.AnimalId;
             displayedAnimals = animals;
+            SetParentChoices(animals, previousFirst, previousSecond);
             animalList.Clear();
             animalRows.Clear();
             foreach (FarmAnimal animal in animals)
             {
-                string identity = animal.AnimalId.ToString("N").Substring(0, 8);
-                animalList.Add(new Label($"{SpeciesLabel(animal.Species)} {identity}"));
+                animalList.Add(new Label(AnimalLabel(animal)));
+                if (animal.MotherId.HasValue && animal.FatherId.HasValue)
+                    animalList.Add(new Label($"Mother {ShortAnimalId(animal.MotherId.Value)} · Father {ShortAnimalId(animal.FatherId.Value)}"));
                 var state = new Label();
                 var action = new Button(() => CareForAnimal(animal));
                 animalList.Add(state);
@@ -92,7 +98,7 @@ namespace FarmLand.Empire.Prototype
         {
             FarmLivestock livestock = farm?.Livestock;
             if (busy || reloadRequired || pending != null || livestock == null || farm.Wallet == null ||
-                livestock.Animals.Length >= livestock.Capacity ||
+                livestock.Animals.Length + (livestock.Breeding == null ? 0 : 1) >= livestock.Capacity ||
                 !livestock.Prices.TryGetValue(species, out int price) || price <= 0 || farm.Wallet.Coins < price)
                 return;
 

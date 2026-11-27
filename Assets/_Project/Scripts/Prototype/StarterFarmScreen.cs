@@ -421,6 +421,10 @@ namespace FarmLand.Empire.Prototype
                 "animal_already_fed" => "Collect its product before feeding again.",
                 "animal_not_fed" => "Feed the animal to start production.",
                 "product_not_ready" => "The product is still in progress.",
+                "invalid_breeding_pair" => "Choose unrelated adults of the same species and opposite sexes.",
+                "breeding_in_progress" => "A breeding timer is already running.",
+                "breeding_not_started" => "Start breeding before collecting an offspring.",
+                "offspring_not_ready" => "The offspring is still in progress.",
                 _ => "The action was rejected. The latest farm state is shown.",
             };
         }

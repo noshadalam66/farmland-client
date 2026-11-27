@@ -43,6 +43,21 @@ namespace FarmLand.Empire.Networking
 
         [JsonProperty("capacity", Required = Required.Always)]
         public int Capacity { get; private set; }
+
+        [JsonProperty("breeding")]
+        public FarmBreeding Breeding { get; private set; }
+    }
+
+    public sealed class FarmBreeding
+    {
+        [JsonProperty("readyAt", Required = Required.Always)]
+        public DateTimeOffset ReadyAt { get; private set; }
+
+        [JsonProperty("motherId", Required = Required.Always)]
+        public Guid MotherId { get; private set; }
+
+        [JsonProperty("fatherId", Required = Required.Always)]
+        public Guid FatherId { get; private set; }
     }
 
     public sealed class FarmAnimal
@@ -55,6 +70,18 @@ namespace FarmLand.Empire.Networking
 
         [JsonProperty("productReadyAt")]
         public DateTimeOffset? ProductReadyAt { get; private set; }
+
+        [JsonProperty("sex")]
+        public string Sex { get; private set; }
+
+        [JsonProperty("motherId")]
+        public Guid? MotherId { get; private set; }
+
+        [JsonProperty("fatherId")]
+        public Guid? FatherId { get; private set; }
+
+        [JsonProperty("matureAt")]
+        public DateTimeOffset? MatureAt { get; private set; }
     }
 
     public sealed class FarmExpansion
@@ -123,7 +150,7 @@ namespace FarmLand.Empire.Networking
 
     public sealed class FarmCommand
     {
-        private FarmCommand(string action, int expectedRevision, string crop = null, string plotId = null, string species = null, Guid? animalId = null)
+        private FarmCommand(string action, int expectedRevision, string crop = null, string plotId = null, string species = null, Guid? animalId = null, Guid? partnerId = null)
         {
             if (expectedRevision < 0)
                 throw new ArgumentOutOfRangeException(nameof(expectedRevision));
@@ -133,6 +160,7 @@ namespace FarmLand.Empire.Networking
             PlotId = plotId;
             Species = species;
             AnimalId = animalId;
+            PartnerId = partnerId;
             ExpectedRevision = expectedRevision;
             CommandId = Guid.NewGuid();
         }
@@ -169,6 +197,14 @@ namespace FarmLand.Empire.Networking
 
         [JsonProperty("animalId", NullValueHandling = NullValueHandling.Ignore)]
         public Guid? AnimalId { get; }
+
+        [JsonProperty("partnerId", NullValueHandling = NullValueHandling.Ignore)]
+        public Guid? PartnerId { get; }
+
+        public static FarmCommand StartBreeding(int revision, Guid first, Guid second) =>
+            new FarmCommand("start_breeding", revision, animalId: first, partnerId: second);
+
+        public static FarmCommand CollectOffspring(int revision) => new FarmCommand("collect_offspring", revision);
 
         public static FarmCommand BuyAnimal(int revision, string species)
         {
