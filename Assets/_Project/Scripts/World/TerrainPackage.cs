@@ -13,14 +13,18 @@ namespace FarmLand.Empire.World
         private const float Spacing = 31.25f;
         private readonly int chunksPerAxis;
 
-        private TerrainPackage(int chunksPerAxis, bool hasWaterMask)
+        private TerrainPackage(int chunksPerAxis, bool hasWaterMask, string elevationSource, string waterSource)
         {
             this.chunksPerAxis = chunksPerAxis;
             HasWaterMask = hasWaterMask;
+            ElevationSource = elevationSource;
+            WaterSource = waterSource;
         }
 
         public int ChunksPerAxis => chunksPerAxis;
         public bool HasWaterMask { get; }
+        public string ElevationSource { get; }
+        public string WaterSource { get; }
 
         public static TerrainPackage Parse(string json)
         {
@@ -54,7 +58,8 @@ namespace FarmLand.Empire.World
                     (hasWaterMask && chunk.Value<string>("waterFile") != WaterFilename(x, y)))
                     throw new InvalidDataException("Invalid terrain chunk coordinates or filename.");
             }
-            return new TerrainPackage(axis, hasWaterMask);
+            return new TerrainPackage(axis, hasWaterMask,
+                manifest.Value<string>("sourceId"), (water as JObject)?.Value<string>("sourceId"));
         }
 
         public static string ChunkFilename(int x, int y) => $"height-{x}-{y}.f32";
