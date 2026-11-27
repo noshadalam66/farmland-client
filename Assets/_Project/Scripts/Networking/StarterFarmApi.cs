@@ -19,6 +19,24 @@ namespace FarmLand.Empire.Networking
 
         [JsonProperty("plot", Required = Required.AllowNull)]
         public FarmPlot Plot { get; private set; }
+
+        [JsonProperty("wallet")]
+        public FarmWallet Wallet { get; private set; }
+
+        [JsonProperty("market")]
+        public FarmMarket Market { get; private set; }
+    }
+
+    public sealed class FarmWallet
+    {
+        [JsonProperty("coins", Required = Required.Always)]
+        public int Coins { get; private set; }
+    }
+
+    public sealed class FarmMarket
+    {
+        [JsonProperty("sellPrices", Required = Required.Always)]
+        public FarmInventory SellPrices { get; private set; }
     }
 
     public sealed class FarmInventory
@@ -33,6 +51,14 @@ namespace FarmLand.Empire.Networking
         public int? Rice { get; private set; }
 
         public bool HasCropVariety => Corn.HasValue && Rice.HasValue;
+
+        public int Count(string crop) => crop switch
+        {
+            "wheat" => Wheat,
+            "corn" => Corn ?? 0,
+            "rice" => Rice ?? 0,
+            _ => 0,
+        };
     }
 
     public sealed class FarmPlot
@@ -80,6 +106,14 @@ namespace FarmLand.Empire.Networking
             return new FarmCommand("plant", revision, crop);
         }
         public static FarmCommand Harvest(int revision) => new FarmCommand("harvest", revision);
+
+        public static FarmCommand Sell(int revision, string crop)
+        {
+            if (crop != "wheat" && crop != "corn" && crop != "rice")
+                throw new ArgumentOutOfRangeException(nameof(crop));
+
+            return new FarmCommand("sell", revision, crop);
+        }
     }
 
     public sealed class FarmResult

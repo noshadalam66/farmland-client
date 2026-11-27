@@ -44,7 +44,9 @@ the plot, server countdown, and wheat inventory.
 With the crop-variety API and database migration 000005, an empty plot offers
 wheat, corn, and rice. Inventory displays the server totals for all three, and
 planted plots show the crop name and server countdown. Older backends continue
-to show wheat and accept the existing default plant command.
+to show wheat and accept the existing default plant command. With migration
+000006 and the market API, the farm shows the coin balance and server prices,
+and sells one harvested unit per action.
 
 The scene generator creates a fixed isometric test map. Authentication uses
 Firebase's email/password and token exchange REST endpoints. Sessions are

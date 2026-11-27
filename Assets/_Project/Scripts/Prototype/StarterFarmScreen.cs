@@ -31,6 +31,9 @@ namespace FarmLand.Empire.Prototype
         private Label plot;
         private Label inventory;
         private DropdownField cropSelector;
+        private VisualElement marketPanel;
+        private Label wallet;
+        private readonly Dictionary<string, Button> saleButtons = new Dictionary<string, Button>();
         private Button action;
         private Button refresh;
 
@@ -135,6 +138,17 @@ namespace FarmLand.Empire.Prototype
             controls.Add(cropSelector);
             action = new Button(SubmitAction);
             controls.Add(action);
+            marketPanel = new VisualElement();
+            controls.Add(marketPanel);
+            wallet = new Label();
+            marketPanel.Add(wallet);
+            saleButtons.Clear();
+            foreach (string crop in new[] { "wheat", "corn", "rice" })
+            {
+                var sell = new Button(() => SellCrop(crop));
+                saleButtons.Add(crop, sell);
+                marketPanel.Add(sell);
+            }
             refresh = new Button(() => StartCoroutine(Run(null))) { text = "Refresh farm" };
             controls.Add(refresh);
             controls.Add(new Button(SignOut) { text = "Sign out" });
@@ -221,6 +235,27 @@ namespace FarmLand.Empire.Prototype
             action.SetEnabled(!busy && (pending != null ||
                 (!reloadRequired && farm != null && remaining <= 0)));
             refresh.SetEnabled(!busy && pending == null);
+
+            bool marketAvailable = farm?.Wallet != null && farm.Market != null;
+            marketPanel.style.display = marketAvailable ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!marketAvailable) return;
+            wallet.text = $"Coins: {farm.Wallet.Coins}";
+            foreach (var entry in saleButtons)
+            {
+                int price = farm.Market.SellPrices.Count(entry.Key);
+                entry.Value.text = $"Sell {CropLabel(entry.Key)} · {price} coins";
+                entry.Value.SetEnabled(!busy && !reloadRequired && pending == null &&
+                    price > 0 && farm.Inventory.Count(entry.Key) > 0);
+            }
+        }
+
+        private void SellCrop(string crop)
+        {
+            if (busy || reloadRequired || pending != null || farm?.Market == null ||
+                farm.Inventory.Count(crop) < 1 || farm.Market.SellPrices.Count(crop) < 1) return;
+
+            pending = FarmCommand.Sell(farm.Revision, crop);
+            StartCoroutine(Run(pending));
         }
 
         private void SubmitAction()
@@ -314,6 +349,7 @@ namespace FarmLand.Empire.Prototype
                 "crop_not_ready" => "The crop is still growing.",
                 "plot_occupied" => "This plot already has a crop.",
                 "plot_empty" => "There is no crop to harvest.",
+                "insufficient_crop" => "There is no stock left to sell.",
                 _ => "The action was rejected. The latest farm state is shown.",
             };
         }
