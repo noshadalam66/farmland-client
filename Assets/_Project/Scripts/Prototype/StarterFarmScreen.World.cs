@@ -41,6 +41,7 @@ namespace FarmLand.Empire.Prototype
             worldPanel.Add(latitude);
             worldPanel.Add(longitude);
             worldPanel.Add(area);
+            AddMapButton();
             worldPanel.Add(new Button(SubmitWorld) { text = "Request terrain" });
             worldPanel.Add(new Button(() => StartCoroutine(RunWorld(null))) { text = "Check world" });
             worldStatus = new Label();
@@ -275,6 +276,7 @@ namespace FarmLand.Empire.Prototype
 
         private void ClearTerrainView()
         {
+            ClosePilotMap();
             if (terrainView != null) Destroy(terrainView);
             terrainView = null;
             if (fixedFarm != null) fixedFarm.SetActive(true);

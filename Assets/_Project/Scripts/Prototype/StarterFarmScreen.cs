@@ -72,6 +72,7 @@ namespace FarmLand.Empire.Prototype
         private void Update()
         {
             if (session != null) Render();
+            CheckPilotMap();
         }
 
         private void OnApplicationFocus(bool focused)

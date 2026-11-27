@@ -82,3 +82,15 @@ This provides a classification preview without changing terrain heights.
 Older scenes can assign a **Water Material** on Starter Farm Screen, or be
 regenerated. Elevation-only packages and the editor mesh preview continue
 to work without the optional mask.
+
+### Google Maps in the Unity Web pilot
+
+To enable **Choose on map** in the Web build, enable Maps JavaScript API in
+the Google Maps project and set **Google Maps Browser Key** on Starter Farm
+Screen. Restrict the browser key to the deployed Web origin and Maps
+JavaScript API. The game requests terrain only after the player confirms the
+coordinates and area in Unity. Google map tiles remain in the picker. The
+terrain worker uses the separately sourced elevation and water datasets.
+
+The picker opens at the San Francisco pilot center. Android and iOS use the
+coordinate fields in this build.
