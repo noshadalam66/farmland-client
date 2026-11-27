@@ -72,6 +72,7 @@ namespace FarmLand.Empire.Editor
                 CreateMaterial(new Color(0.12f, 0.41f, 0.64f), assetPrefix + " Water.mat");
             controller.ApplyModifiedPropertiesWithoutUndo();
             AddExpansionPreview(controller, cropMarker.transform.parent, assetPrefix);
+            AddTownPreview(controller, fixedFarm.transform, assetPrefix);
             configure?.Invoke(controller);
             if (!EditorSceneManager.SaveScene(scene, path))
                 throw new IOException("Could not save the generated starter farm scene.");
@@ -95,6 +96,55 @@ namespace FarmLand.Empire.Editor
             controller.FindProperty("expansionGeometry").objectReferenceValue = expansion;
             controller.FindProperty("expansionCropMarker").objectReferenceValue = crop;
             controller.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void AddTownPreview(SerializedObject controller, Transform fixedFarm, string assetPrefix)
+        {
+            var settlement = new GameObject("Settlement");
+            settlement.transform.SetParent(fixedFarm, false);
+            Material roadMaterial = CreateMaterial(new Color(0.27f, 0.31f, 0.28f), assetPrefix + " Town Road.mat");
+            Material wallMaterial = CreateMaterial(new Color(0.83f, 0.68f, 0.43f), assetPrefix + " Cottage Walls.mat");
+            Material roofMaterial = CreateMaterial(new Color(0.55f, 0.24f, 0.18f), assetPrefix + " Cottage Roof.mat");
+
+            GameObject road = TownPiece(settlement.transform, "Road", new Vector3(0, -0.06f, 1.65f),
+                new Vector3(7.5f, 0.08f, 0.55f), roadMaterial);
+            road.SetActive(false);
+            controller.FindProperty("roadGeometry").objectReferenceValue = road;
+
+            SerializedProperty cottages = controller.FindProperty("cottageGeometry");
+            cottages.arraySize = 4;
+            for (int i = 0; i < cottages.arraySize; i++)
+            {
+                var cottage = new GameObject($"Cottage {i + 1}");
+                cottage.transform.SetParent(settlement.transform, false);
+                cottage.transform.localPosition = new Vector3(-2.7f + i * 1.8f, 0, 2.65f);
+                TownPiece(cottage.transform, "Walls", new Vector3(0, 0.25f, 0),
+                    new Vector3(1.0f, 0.7f, 0.85f), wallMaterial);
+                TownPiece(cottage.transform, "Door", new Vector3(0, 0.1f, -0.44f),
+                    new Vector3(0.23f, 0.39f, 0.04f), roadMaterial);
+                GameObject westRoof = TownPiece(cottage.transform, "West Roof", new Vector3(-0.26f, 0.68f, 0),
+                    new Vector3(0.63f, 0.09f, 1.04f), roofMaterial);
+                westRoof.transform.localRotation = Quaternion.Euler(0, 0, 24);
+                GameObject eastRoof = TownPiece(cottage.transform, "East Roof", new Vector3(0.26f, 0.68f, 0),
+                    new Vector3(0.63f, 0.09f, 1.04f), roofMaterial);
+                eastRoof.transform.localRotation = Quaternion.Euler(0, 0, -24);
+                cottage.SetActive(false);
+                cottages.GetArrayElementAtIndex(i).objectReferenceValue = cottage;
+            }
+            controller.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static GameObject TownPiece(Transform parent, string name, Vector3 localPosition,
+            Vector3 size, Material material)
+        {
+            GameObject piece = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            piece.name = name;
+            piece.transform.SetParent(parent, false);
+            piece.transform.localPosition = localPosition;
+            piece.transform.localScale = size;
+            if (material != null) piece.GetComponent<Renderer>().sharedMaterial = material;
+            UnityEngine.Object.DestroyImmediate(piece.GetComponent<Collider>());
+            return piece;
         }
 
         private static GameObject CreateTile(string name, Vector3 center, Vector3 size, Color color, string materialPath)
