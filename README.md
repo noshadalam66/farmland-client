@@ -58,3 +58,19 @@ The runtime mesh builder maps east to Unity X and north to Unity Z, with
 elevation as Unity Y in meters. Adjacent meshes place shared edge samples
 at the same coordinates. The current preview calculates lighting normals
 per mesh, so lighting can differ along chunk boundaries.
+
+### Load a pilot world in Play Mode
+
+Use **FarmLand → Create Starter Farm Scene** to generate a scene with the
+world controls, then configure and sign in as described above. The API must
+include world migrations 000003–000004 and use the same terrain directory as
+the pilot worker.
+
+1. Open **Pilot world**. Enter coordinates covered by the configured source
+   raster, select 1, 4, or 9 km², and request terrain.
+2. Run the API repository's terrain worker. Select **Check world** once it
+   finishes to fetch the manifest and render the height chunks.
+3. Close **Pilot world** to return to the fixed starter-farm view.
+
+The pilot selector takes numeric coordinates. It loads every chunk for the
+selected bounded area and scales the preview to fit the starter camera.

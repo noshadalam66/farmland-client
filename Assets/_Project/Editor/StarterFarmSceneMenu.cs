@@ -36,13 +36,17 @@ namespace FarmLand.Empire.Editor
             light.type = LightType.Directional;
             light.transform.rotation = Quaternion.Euler(50, -30, 0);
 
-            CreateTile("Ground", new Vector3(0, -0.35f, 0), new Vector3(8, 0.5f, 8),
+            var fixedFarm = new GameObject("Fixed Farm");
+            GameObject ground = CreateTile("Ground", new Vector3(0, -0.35f, 0), new Vector3(8, 0.5f, 8),
                 new Color(0.35f, 0.56f, 0.31f), assetPrefix + " Ground.mat");
-            CreateTile("Starter Plot", Vector3.zero, new Vector3(2.5f, 0.3f, 2.5f),
+            GameObject soil = CreateTile("Starter Plot", Vector3.zero, new Vector3(2.5f, 0.3f, 2.5f),
                 new Color(0.47f, 0.28f, 0.17f), assetPrefix + " Soil.mat");
 
             GameObject cropMarker = CreateTile("Wheat", new Vector3(0, 0.42f, 0), new Vector3(1.6f, 0.5f, 1.6f),
                 new Color(0.88f, 0.68f, 0.23f), assetPrefix + " Wheat.mat");
+            ground.transform.SetParent(fixedFarm.transform);
+            soil.transform.SetParent(fixedFarm.transform);
+            cropMarker.transform.SetParent(fixedFarm.transform);
             cropMarker.SetActive(false);
 
             var settings = ScriptableObject.CreateInstance<PanelSettings>();
@@ -55,6 +59,8 @@ namespace FarmLand.Empire.Editor
             document.panelSettings = settings;
             var controller = new SerializedObject(screen.AddComponent<StarterFarmScreen>());
             controller.FindProperty("cropMarker").objectReferenceValue = cropMarker;
+            controller.FindProperty("fixedFarm").objectReferenceValue = fixedFarm;
+            controller.FindProperty("terrainMaterial").objectReferenceValue = ground.GetComponent<Renderer>().sharedMaterial;
             controller.ApplyModifiedPropertiesWithoutUndo();
             EditorSceneManager.SaveScene(scene, path);
             AssetDatabase.SaveAssets();
