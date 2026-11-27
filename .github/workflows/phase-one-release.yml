@@ -1,0 +1,43 @@
+name: Phase 1 release builds
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase-one-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, macOS, farmland-unity]
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [WebGL, Android, iOS]
+    env:
+      UNITY_EDITOR: ${{ vars.FARMLAND_UNITY_EDITOR }}
+      FARMLAND_API_ORIGIN: ${{ vars.FARMLAND_API_ORIGIN }}
+      FARMLAND_FIREBASE_WEB_API_KEY: ${{ vars.FARMLAND_FIREBASE_WEB_API_KEY }}
+      FARMLAND_GOOGLE_MAPS_BROWSER_KEY: ${{ vars.FARMLAND_GOOGLE_MAPS_BROWSER_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build release player
+        shell: bash
+        env:
+          BUILD_TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          : "${UNITY_EDITOR:?Set FARMLAND_UNITY_EDITOR to the Unity executable on the runner}"
+          test -x "$UNITY_EDITOR"
+          "$UNITY_EDITOR" -batchmode -quit -projectPath "$GITHUB_WORKSPACE" \
+            -buildTarget "$BUILD_TARGET" \
+            -executeMethod FarmLand.Empire.Editor.PilotBuild.BuildRelease -logFile -
+      - uses: actions/upload-artifact@v4
+        with:
+          name: farmland-${{ matrix.target }}-${{ github.sha }}
+          path: Builds/Release/${{ matrix.target }}/
+          if-no-files-found: error

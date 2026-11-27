@@ -180,3 +180,19 @@ for that environment. Outputs are under `Builds/Release/`.
 - **iOS** exports an Xcode project. Archive and sign it on macOS for TestFlight.
 
 Verify the same-account handoff against the same deployed API and Firebase project.
+
+Run **Phase 1 release builds** from **Actions** on `main` to package all
+three targets from one commit. The workflow requires a project-controlled
+macOS runner labeled `farmland-unity`, with an activated Unity version
+matching `ProjectSettings/ProjectVersion.txt` and the WebGL, Android, and
+iOS modules. Set these GitHub repository variables:
+
+| Variable | Value |
+| --- | --- |
+| `FARMLAND_UNITY_EDITOR` | Absolute path to the runner's Unity executable |
+| `FARMLAND_API_ORIGIN` | HTTPS origin of the shared test deployment |
+| `FARMLAND_FIREBASE_WEB_API_KEY` | Client API key for that deployment's Firebase project |
+| `FARMLAND_GOOGLE_MAPS_BROWSER_KEY` | Optional restricted browser key |
+
+Download the artifacts from the same workflow run before performing the
+Android → web → iOS → Android handoff above.

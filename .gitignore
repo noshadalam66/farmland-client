@@ -15,3 +15,5 @@
 *.mobileprovision
 /Assets/_FarmLandPilotBuild_*/
 /Assets/_FarmLandPilotBuild_*.meta
+/Assets/_FarmLandBuild_*/
+/Assets/_FarmLandBuild_*.meta
