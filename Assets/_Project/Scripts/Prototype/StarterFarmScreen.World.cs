@@ -236,6 +236,9 @@ namespace FarmLand.Empire.Prototype
             var view = new GameObject("Pilot Terrain");
             view.transform.SetParent(transform, false);
             var meshes = view.AddComponent<TerrainMeshLifetime>();
+            float scale = 8f / (1000f * package.ChunksPerAxis);
+            view.transform.localScale = Vector3.one * scale;
+            Bounds bounds = default;
             bool completed = false;
             try
             {
@@ -278,23 +281,21 @@ namespace FarmLand.Empire.Prototype
                         tile.transform.SetParent(view.transform, false);
                         tile.GetComponent<MeshFilter>().sharedMesh = mesh;
                         var renderer = tile.GetComponent<MeshRenderer>();
-                        renderer.enabled = false;
                         if (water == null) renderer.sharedMaterial = terrainMaterial;
                         else renderer.sharedMaterials = new[] { terrainMaterial, waterMaterial };
+
+                        if (tileNumber == 1)
+                        {
+                            bounds = mesh.bounds;
+                            fixedFarm.SetActive(false);
+                        }
+                        else bounds.Encapsulate(mesh.bounds);
+                        view.transform.position = Vector3.down * (bounds.center.y * scale);
                     }
                 }
 
-                float scale = 8f / (1000f * package.ChunksPerAxis);
-                view.transform.localScale = Vector3.one * scale;
-                Bounds bounds = view.transform.GetChild(0).GetComponent<MeshFilter>().sharedMesh.bounds;
-                for (int i = 1; i < view.transform.childCount; i++)
-                    bounds.Encapsulate(view.transform.GetChild(i).GetComponent<MeshFilter>().sharedMesh.bounds);
-                view.transform.position = Vector3.down * (bounds.center.y * scale);
                 terrainView = view;
                 completed = true;
-                fixedFarm.SetActive(false);
-                foreach (var renderer in view.GetComponentsInChildren<MeshRenderer>())
-                    renderer.enabled = true;
                 worldStatus.text = "Terrain loaded.";
                 var sources = new List<string>();
                 if (!string.IsNullOrWhiteSpace(package.ElevationSource))
@@ -305,7 +306,12 @@ namespace FarmLand.Empire.Prototype
             }
             finally
             {
-                if (!completed) Destroy(view);
+                if (!completed)
+                {
+                    view.SetActive(false);
+                    Destroy(view);
+                    fixedFarm.SetActive(true);
+                }
             }
         }
 
