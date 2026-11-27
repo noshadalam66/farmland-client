@@ -27,6 +27,9 @@ namespace FarmLand.Empire.Prototype
         private GameObject terrainView;
         private string selectionKey;
         private Guid selectionId;
+        private const double WorldPollSeconds = 5;
+        private const double WorldRetrySeconds = 15;
+        private double? nextWorldCheck;
 
         private void BuildWorldControls()
         {
@@ -64,6 +67,15 @@ namespace FarmLand.Empire.Prototype
             }
         }
 
+        private void PollWorldGeneration()
+        {
+            if (!nextWorldCheck.HasValue || Time.realtimeSinceStartupAsDouble < nextWorldCheck.Value ||
+                busy || pending != null || reloadRequired || session?.SignedIn != true ||
+                worldPanel?.style.display.value != DisplayStyle.Flex) return;
+
+            StartCoroutine(RunWorld(null, automatic: true));
+        }
+
         private void SubmitWorld()
         {
             if (busy) return;
@@ -91,11 +103,14 @@ namespace FarmLand.Empire.Prototype
             StartCoroutine(RunWorld(payload.ToString(Formatting.None)));
         }
 
-        private IEnumerator RunWorld(string payload)
+        private IEnumerator RunWorld(string payload, bool automatic = false)
         {
             if (busy || session?.SignedIn != true) yield break;
             busy = true;
-            worldStatus.text = payload == null ? "Checking world…" : "Requesting terrain…";
+            bool tracking = nextWorldCheck.HasValue;
+            nextWorldCheck = null;
+            if (!automatic)
+                worldStatus.text = payload == null ? "Checking world…" : "Requesting terrain…";
             Render();
             try
             {
@@ -111,7 +126,12 @@ namespace FarmLand.Empire.Prototype
 
                 if (code != 200 && code != 201 && code != 409)
                 {
-                    worldStatus.text = "Could not reach the world service. Try again.";
+                    if (tracking && payload == null && (code == 0 || code == 429 || code >= 500))
+                    {
+                        nextWorldCheck = Time.realtimeSinceStartupAsDouble + WorldRetrySeconds;
+                        worldStatus.text = "Could not check terrain progress. Retrying automatically.";
+                    }
+                    else worldStatus.text = "Could not reach the world service. Try again.";
                     yield break;
                 }
 
@@ -129,10 +149,12 @@ namespace FarmLand.Empire.Prototype
                 switch ((string)world?["status"])
                 {
                     case "queued":
-                        worldStatus.text = "Terrain request queued. Check again after generation runs.";
+                        nextWorldCheck = Time.realtimeSinceStartupAsDouble + WorldPollSeconds;
+                        worldStatus.text = "Terrain request queued.";
                         break;
                     case "generating":
-                        worldStatus.text = "Generating terrain. Check again in a moment.";
+                        nextWorldCheck = Time.realtimeSinceStartupAsDouble + WorldPollSeconds;
+                        worldStatus.text = "Generating terrain…";
                         break;
                     case "ready":
                         if (terrainView == null) yield return LoadTerrainView();
@@ -276,6 +298,7 @@ namespace FarmLand.Empire.Prototype
 
         private void ClearTerrainView()
         {
+            nextWorldCheck = null;
             ClosePilotMap();
             if (terrainView != null) Destroy(terrainView);
             terrainView = null;
