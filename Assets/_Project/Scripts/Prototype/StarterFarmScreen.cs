@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 namespace FarmLand.Empire.Prototype
 {
     [RequireComponent(typeof(UIDocument))]
-    public sealed class StarterFarmScreen : MonoBehaviour
+    public sealed partial class StarterFarmScreen : MonoBehaviour
     {
         [SerializeField] private string apiOrigin = "https://farm-api.example.com";
         [SerializeField] private string firebaseWebApiKey;
@@ -165,6 +165,7 @@ namespace FarmLand.Empire.Prototype
             farmHint = new Label();
             farmHint.style.whiteSpace = WhiteSpace.Normal;
             controls.Add(farmHint);
+            BuildLivestockPanel();
             status = new Label();
             status.style.whiteSpace = WhiteSpace.Normal;
             panel.Add(status);
@@ -272,6 +273,7 @@ namespace FarmLand.Empire.Prototype
             action.SetEnabled(!busy && (pending != null ||
                 (!reloadRequired && farm != null && remaining <= 0)));
             refresh.SetEnabled(!busy && pending == null);
+            RenderLivestock();
 
             bool marketAvailable = farm?.Wallet != null && farm.Market != null;
             marketPanel.style.display = marketAvailable ? DisplayStyle.Flex : DisplayStyle.None;
@@ -414,6 +416,11 @@ namespace FarmLand.Empire.Prototype
                 "insufficient_coins" => "Earn more coins by selling crops.",
                 "parcel_already_owned" => "The expansion is already owned.",
                 "parcel_not_owned" => "Buy the expansion before planting there.",
+                "livestock_capacity" => "The livestock pen is full.",
+                "animal_not_owned" => "That animal is unavailable.",
+                "animal_already_fed" => "Collect its product before feeding again.",
+                "animal_not_fed" => "Feed the animal to start production.",
+                "product_not_ready" => "The product is still in progress.",
                 _ => "The action was rejected. The latest farm state is shown.",
             };
         }

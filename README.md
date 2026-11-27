@@ -52,6 +52,11 @@ harvest the starter and expansion plots. Regenerate the starter scene if
 needed to show the second plot and its crop marker. The farm screen guides
 new players from planting through buying the expansion using saved progress.
 
+With migrations 000008–000009 and the livestock API, open **Livestock** in
+the starter farm. Buy goats or chickens with farm coins, feed each animal
+one wheat, and collect the product after the server countdown. The roster
+and product inventory are saved to the account.
+
 The scene generator creates a fixed isometric test map. Authentication uses
 Firebase's email/password and token exchange REST endpoints. Sessions are
 kept in memory for this prototype. Closing the app requires signing in again,
