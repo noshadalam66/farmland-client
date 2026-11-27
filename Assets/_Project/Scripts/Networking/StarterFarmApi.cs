@@ -302,7 +302,35 @@ namespace FarmLand.Empire.Networking
                 JsonConvert.SerializeObject(command), complete);
         }
 
+        public IEnumerator LoadHarvestLeaderboard(string idToken, Action<long, HarvestLeaderboard> complete)
+        {
+            return SendRequest(UnityWebRequest.kHttpVerbGET, "/v1/leaderboard/harvests", idToken, null, request =>
+            {
+                HarvestLeaderboard board = null;
+                if (request.result == UnityWebRequest.Result.Success && request.responseCode == 200)
+                {
+                    try { board = JsonConvert.DeserializeObject<HarvestLeaderboard>(request.downloadHandler.text); }
+                    catch (JsonException) { }
+                }
+                complete(request.responseCode, board);
+            });
+        }
+
+        public IEnumerator SetLeaderboardVisibility(string idToken, bool enabled, Action<long> complete)
+        {
+            string body = enabled ? "{\"enabled\":true}" : "{\"enabled\":false}";
+            return SendRequest(UnityWebRequest.kHttpVerbPUT, "/v1/leaderboard/preferences", idToken, body,
+                request => complete(request.responseCode));
+        }
+
         private IEnumerator Send(string method, string path, string idToken, string body, Action<FarmResult> complete)
+        {
+            if (complete == null) throw new ArgumentNullException(nameof(complete));
+            return SendRequest(method, path, idToken, body, request => complete(ReadResult(request)));
+        }
+
+        private IEnumerator SendRequest(string method, string path, string idToken, string body,
+            Action<UnityWebRequest> complete)
         {
             if (string.IsNullOrWhiteSpace(idToken))
                 throw new ArgumentException("A Firebase ID token is required.", nameof(idToken));
@@ -323,7 +351,7 @@ namespace FarmLand.Empire.Networking
             }
 
             yield return request.SendWebRequest();
-            complete(ReadResult(request));
+            complete(request);
         }
 
         private static FarmResult ReadResult(UnityWebRequest request)

@@ -62,6 +62,10 @@ offspring. The roster shows the saved parent identifiers for each offspring.
 With migration 000011, open **Grain mill** to buy the building, start a wheat
 batch, collect flour after the countdown, and sell it at the server price.
 
+With migration 000012, open **Harvest leaderboard** to view the top farms
+and your rank. Your farm starts hidden. Join to participate under the
+server-generated alias or hide your farm again from the same panel.
+
 The scene generator creates a fixed isometric test map. Authentication uses
 Firebase's email/password and token exchange REST endpoints. Sessions are
 kept in memory for this prototype. Closing the app requires signing in again,
