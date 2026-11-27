@@ -14,7 +14,7 @@ namespace FarmLand.Empire.Prototype
         private bool mapOpen;
         private bool previousKeyboardCapture;
 
-        [DllImport("__Internal")] private static extern void FarmlandMapOpen(string key);
+        [DllImport("__Internal")] private static extern void FarmlandMapOpen(string key, int areaKm2);
         [DllImport("__Internal")] private static extern int FarmlandMapRead(out double latitude, out double longitude);
         [DllImport("__Internal")] private static extern void FarmlandMapClose();
 #endif
@@ -38,7 +38,7 @@ namespace FarmLand.Empire.Prototype
             {
                 latitude.value = lat.ToString("R", CultureInfo.InvariantCulture);
                 longitude.value = lon.ToString("R", CultureInfo.InvariantCulture);
-                worldStatus.text = "Location selected. Choose an area and request terrain.";
+                worldStatus.text = "Location selected. Request terrain when ready.";
             }
             else if (result == 3)
             {
@@ -64,7 +64,7 @@ namespace FarmLand.Empire.Prototype
             previousKeyboardCapture = WebGLInput.captureAllKeyboardInput;
             WebGLInput.captureAllKeyboardInput = false;
             mapOpen = true;
-            FarmlandMapOpen(googleMapsBrowserKey.Trim());
+            FarmlandMapOpen(googleMapsBrowserKey.Trim(), int.Parse(area.value, CultureInfo.InvariantCulture));
         }
 #endif
     }
