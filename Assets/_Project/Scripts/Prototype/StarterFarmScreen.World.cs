@@ -27,6 +27,7 @@ namespace FarmLand.Empire.Prototype
         private GameObject terrainView;
         private string selectionKey;
         private Guid selectionId;
+        private string failedWorldRequestId;
         private const double WorldPollSeconds = 5;
         private const double WorldRetrySeconds = 15;
         private double? nextWorldCheck;
@@ -87,7 +88,7 @@ namespace FarmLand.Empire.Prototype
                 return;
             }
             int areaKm2 = int.Parse(area.value, CultureInfo.InvariantCulture);
-            string key = FormattableString.Invariant($"{lat:R}/{lon:R}/{areaKm2}");
+            string key = FormattableString.Invariant($"{lat:R}/{lon:R}/{areaKm2}/{failedWorldRequestId}");
             if (selectionKey != key)
             {
                 selectionKey = key;
@@ -100,6 +101,8 @@ namespace FarmLand.Empire.Prototype
                 ["longitude"] = lon,
                 ["areaKm2"] = areaKm2,
             };
+            if (failedWorldRequestId != null)
+                payload["replaceFailedRequestId"] = failedWorldRequestId;
             StartCoroutine(RunWorld(payload.ToString(Formatting.None)));
         }
 
@@ -120,6 +123,7 @@ namespace FarmLand.Empire.Prototype
 
                 if (code == 404)
                 {
+                    failedWorldRequestId = null;
                     worldStatus.text = "No world selected. Enter the center of the pilot area.";
                     yield break;
                 }
@@ -146,7 +150,11 @@ namespace FarmLand.Empire.Prototype
                     world = null;
                 }
 
-                switch ((string)world?["status"])
+                string worldState = (string)world?["status"];
+                failedWorldRequestId = worldState == "failed" && Guid.TryParse((string)world["requestId"], out Guid failedId)
+                    ? failedId.ToString() : null;
+
+                switch (worldState)
                 {
                     case "queued":
                         nextWorldCheck = Time.realtimeSinceStartupAsDouble + WorldPollSeconds;
@@ -161,7 +169,7 @@ namespace FarmLand.Empire.Prototype
                         else worldStatus.text = "Terrain loaded.";
                         break;
                     case "failed":
-                        worldStatus.text = "Terrain generation failed. Ask the pilot operator to check source coverage.";
+                        worldStatus.text = "Terrain generation failed. Choose a location and request terrain again.";
                         break;
                     default:
                         worldStatus.text = "Could not read the world status. Try again.";

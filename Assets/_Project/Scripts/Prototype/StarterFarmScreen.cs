@@ -225,6 +225,7 @@ namespace FarmLand.Empire.Prototype
             ClearTerrainView();
             if (worldPanel != null) worldPanel.style.display = DisplayStyle.None;
             selectionKey = null;
+            failedWorldRequestId = null;
             farm = null;
             if (plotSelector != null) plotSelector.index = 0;
             pending = null;
