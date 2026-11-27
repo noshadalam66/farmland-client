@@ -164,3 +164,19 @@ For iOS, use macOS and Xcode to sign and install the exported project.
 Use a test account on all three builds. Plant on Android, verify the same
 plot and countdown on web, harvest on iOS, then reopen Android and verify
 one unit was credited. Run the test on a farm with an empty selected plot.
+
+### Release build artifacts
+
+Use the same batch-mode command and target modules with
+`-executeMethod FarmLand.Empire.Editor.PilotBuild.BuildRelease`.
+Set `FARMLAND_API_ORIGIN` to the deployed HTTPS API and use the Firebase key
+for that environment. Outputs are under `Builds/Release/`.
+
+- **WebGL** produces the static player. Serve it over HTTPS and configure
+  the API's `WEB_ORIGIN` to match the deployed web origin.
+- **Android** produces an AAB. Configure the project's application ID and
+  release signing before uploading the bundle to Google Play internal testing.
+  Use the pilot APK for direct device installation.
+- **iOS** exports an Xcode project. Archive and sign it on macOS for TestFlight.
+
+Verify the same-account handoff against the same deployed API and Firebase project.

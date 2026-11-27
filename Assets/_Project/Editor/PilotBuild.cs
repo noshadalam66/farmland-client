@@ -10,16 +10,20 @@ namespace FarmLand.Empire.Editor
 {
     public static class PilotBuild
     {
-        public static void Build()
+        public static void Build() => BuildPlayer(false);
+
+        public static void BuildRelease() => BuildPlayer(true);
+
+        private static void BuildPlayer(bool release)
         {
             if (!Application.isBatchMode)
-                throw new InvalidOperationException("Run the pilot build from Unity batch mode.");
+                throw new InvalidOperationException("Run the build from Unity batch mode.");
 
             BuildTarget target = EditorUserBuildSettings.activeBuildTarget;
             string outputName = target switch
             {
                 BuildTarget.WebGL => "web",
-                BuildTarget.Android => "FarmLandPilot.apk",
+                BuildTarget.Android => release ? "FarmLandEmpire.aab" : "FarmLandPilot.apk",
                 BuildTarget.iOS => "ios-xcode",
                 _ => throw new InvalidOperationException("Pass -buildTarget WebGL, Android, or iOS."),
             };
@@ -30,16 +34,19 @@ namespace FarmLand.Empire.Editor
             if (!Uri.TryCreate(apiOrigin, UriKind.Absolute, out Uri origin))
                 throw new InvalidOperationException("FARMLAND_API_ORIGIN must be an absolute origin.");
             _ = new StarterFarmApi(origin);
+            if (release && (origin.Scheme != Uri.UriSchemeHttps || origin.IsLoopback))
+                throw new InvalidOperationException("Release builds require a non-loopback HTTPS API origin.");
             string firebaseKey = Required("FARMLAND_FIREBASE_WEB_API_KEY");
             string mapsKey = target == BuildTarget.WebGL
                 ? Environment.GetEnvironmentVariable("FARMLAND_GOOGLE_MAPS_BROWSER_KEY")?.Trim() ?? ""
                 : "";
 
             string runId = Guid.NewGuid().ToString("N");
-            string generatedName = "_FarmLandPilotBuild_" + runId;
+            string buildType = release ? "Release" : "Pilot";
+            string generatedName = "_FarmLandBuild_" + runId;
             string generatedPath = "Assets/" + generatedName;
-            string scenePath = generatedPath + "/Pilot.unity";
-            string buildRoot = Path.GetFullPath(Path.Combine("Builds", "Pilot", target.ToString(), runId));
+            string scenePath = generatedPath + "/FarmLand.unity";
+            string buildRoot = Path.GetFullPath(Path.Combine("Builds", buildType, target.ToString(), runId));
             Directory.CreateDirectory(buildRoot);
 
             bool previousBundleSetting = EditorUserBuildSettings.buildAppBundle;
@@ -56,7 +63,7 @@ namespace FarmLand.Empire.Editor
                     controller.FindProperty("googleMapsBrowserKey").stringValue = mapsKey;
                     controller.ApplyModifiedPropertiesWithoutUndo();
                 });
-                if (target == BuildTarget.Android) EditorUserBuildSettings.buildAppBundle = false;
+                if (target == BuildTarget.Android) EditorUserBuildSettings.buildAppBundle = release;
 
                 string outputPath = Path.Combine(buildRoot, outputName);
                 BuildReport report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
@@ -66,9 +73,9 @@ namespace FarmLand.Empire.Editor
                     locationPathName = outputPath,
                 });
                 if (report.summary.result != BuildResult.Succeeded)
-                    throw new InvalidOperationException($"Pilot build failed for {target}: {report.summary.result}.");
+                    throw new InvalidOperationException($"FarmLand {buildType} build failed for {target}: {report.summary.result}.");
 
-                Debug.Log($"FarmLand pilot build ready at {outputPath}");
+                Debug.Log($"FarmLand {buildType} build ready at {outputPath}");
             }
             finally
             {
