@@ -27,7 +27,7 @@ mergeInto(LibraryManager.library, {
   },
 
   FarmlandMapOpen__deps: ['$FarmlandPilotMap'],
-  FarmlandMapOpen: function (keyPointer) {
+  FarmlandMapOpen: function (keyPointer, areaKm2) {
     var state = FarmlandPilotMap;
     state.close(0);
     state.selected = null;
@@ -36,7 +36,7 @@ mergeInto(LibraryManager.library, {
     dialog.setAttribute('aria-label', 'Choose pilot world center');
     Object.assign(dialog.style, { width: 'min(90vw, 760px)', padding: '16px', color: '#18251c' });
     var instructions = document.createElement('p');
-    instructions.textContent = 'Click the map to choose the center of your pilot world.';
+    instructions.textContent = 'Select the center of the terrain area. The outline previews the selected size.';
     var mapElement = document.createElement('div');
     mapElement.style.height = 'min(58vh, 480px)';
     var status = document.createElement('p');
@@ -80,12 +80,12 @@ mergeInto(LibraryManager.library, {
           fullscreenControl: false,
           clickableIcons: false
         });
-        state.marker = new google.maps.Circle({
+        state.marker = new google.maps.Rectangle({
           map: map,
-          radius: 70,
           fillColor: '#1978ad',
-          fillOpacity: 0.75,
-          strokeWeight: 0,
+          fillOpacity: 0.18,
+          strokeColor: '#1978ad',
+          strokeWeight: 2,
           clickable: false,
           visible: false
         });
@@ -102,9 +102,18 @@ mergeInto(LibraryManager.library, {
             return;
           }
           state.selected = { lat: lat, lng: lng };
-          state.marker.setCenter(event.latLng);
+          // Approximate the worker's square projected area in geographic coordinates.
+          var halfSideDegrees = Math.sqrt(areaKm2) * 500 / 111320;
+          var halfWidthDegrees = halfSideDegrees / Math.cos(lat * Math.PI / 180);
+          var wrapLongitude = function (degrees) { return (degrees + 540) % 360 - 180; };
+          state.marker.setBounds({
+            north: lat + halfSideDegrees,
+            south: lat - halfSideDegrees,
+            west: wrapLongitude(lng - halfWidthDegrees),
+            east: wrapLongitude(lng + halfWidthDegrees)
+          });
           state.marker.setVisible(true);
-          status.textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
+          status.textContent = lat.toFixed(6) + ', ' + lng.toFixed(6) + ' · ' + areaKm2 + ' km²';
           confirm.disabled = false;
         });
       } catch (error) {

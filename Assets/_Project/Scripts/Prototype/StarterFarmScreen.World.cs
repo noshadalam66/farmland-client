@@ -47,6 +47,7 @@ namespace FarmLand.Empire.Prototype
             worldPanel.Add(latitude);
             worldPanel.Add(longitude);
             worldPanel.Add(area);
+            worldPanel.Add(new Button(SelectSanFrancisco) { text = "Use San Francisco test area" });
             AddMapButton();
             worldPanel.Add(new Button(SubmitWorld) { text = "Request terrain" });
             worldPanel.Add(new Button(() => StartCoroutine(RunWorld(null))) { text = "Check world" });
@@ -59,6 +60,14 @@ namespace FarmLand.Empire.Prototype
             terrainSources.style.whiteSpace = WhiteSpace.Normal;
             worldPanel.Add(savedWorldLocation);
             worldPanel.Add(terrainSources);
+        }
+
+        private void SelectSanFrancisco()
+        {
+            if (busy) return;
+            latitude.value = "37.7598";
+            longitude.value = "-122.499";
+            worldStatus.text = "San Francisco selected. Choose an area and request terrain.";
         }
 
         private void ToggleWorld()

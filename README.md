@@ -119,8 +119,10 @@ JavaScript API. The game requests terrain only after the player confirms the
 coordinates and area in Unity. Google map tiles remain in the picker. The
 terrain worker uses the separately sourced elevation and water datasets.
 
-The picker opens at the San Francisco pilot center. Android and iOS use the
-coordinate fields in this build.
+The picker opens at the San Francisco pilot center and outlines the approximate
+footprint for the size selected before opening the map. All platforms can fill
+the coordinate fields with **Use San Francisco test area**. The preset uses
+the center documented in the terrain worker setup.
 
 ## Starter settlement
 
