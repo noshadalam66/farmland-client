@@ -85,6 +85,7 @@ namespace FarmLand.Empire.Prototype
             if (session != null) Render();
             RefreshExpiredTownOrders();
             CheckPilotMap();
+            PollWorldGeneration();
         }
 
         private void OnApplicationFocus(bool focused)
