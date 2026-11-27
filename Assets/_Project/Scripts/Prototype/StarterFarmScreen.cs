@@ -445,7 +445,8 @@ namespace FarmLand.Empire.Prototype
                 "flour_not_ready" => "The flour is still in progress.",
                 "insufficient_flour" => "There is no flour left to sell.",
                 "town_requires_expansion" => "Buy the farm expansion before building.",
-                "town_requires_road" => "Build a road before adding a cottage.",
+                "town_requires_road" => "Build a road before adding this building.",
+                "town_requires_cottage" => "Build a cottage before adding this building.",
                 "town_building_limit" => "This building type has reached its limit.",
                 _ => "The action was rejected. The latest farm state is shown.",
             };

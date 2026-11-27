@@ -129,6 +129,10 @@ Regenerate the starter scene to see the road and cottages in fixed slots
 along the farm edge. They reappear after sign-in based on the saved building
 counts. Terrain mode continues to show the geographic pilot separately.
 
+With migration 000014, the panel also supports a water tower, workshops,
+schools, and clinics and displays server-calculated service coverage and
+wellbeing. The extra services are shown in the panel.
+
 ## Reproducible pilot builds
 
 Use a licensed Unity 6.3 editor with the target's build support installed.
