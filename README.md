@@ -135,6 +135,10 @@ wellbeing. Regenerate the starter scene to show saved service buildings
 in fixed slots along the other side of the farm. The game panel scrolls
 when expanded controls exceed the available height.
 
+With migration 000015, **Settlement → Daily supply orders** offers wheat,
+flour, and milk deliveries as more residents arrive. The board resets at
+midnight UTC, and completed deliveries credit the farm coin balance.
+
 ## Reproducible pilot builds
 
 Use a licensed Unity 6.3 editor with the target's build support installed.

@@ -37,6 +37,9 @@ namespace FarmLand.Empire.Networking
 
         [JsonProperty("town")]
         public FarmTown Town { get; private set; }
+
+        [JsonProperty("townOrders")]
+        public FarmTownOrders TownOrders { get; private set; }
     }
 
     public sealed class FarmMill
@@ -177,7 +180,7 @@ namespace FarmLand.Empire.Networking
 
     public sealed class FarmCommand
     {
-        private FarmCommand(string action, int expectedRevision, string crop = null, string plotId = null, string species = null, Guid? animalId = null, Guid? partnerId = null, string building = null)
+        private FarmCommand(string action, int expectedRevision, string crop = null, string plotId = null, string species = null, Guid? animalId = null, Guid? partnerId = null, string building = null, string orderKey = null, string orderDate = null)
         {
             if (expectedRevision < 0)
                 throw new ArgumentOutOfRangeException(nameof(expectedRevision));
@@ -189,6 +192,8 @@ namespace FarmLand.Empire.Networking
             AnimalId = animalId;
             PartnerId = partnerId;
             Building = building;
+            OrderKey = orderKey;
+            OrderDate = orderDate;
             ExpectedRevision = expectedRevision;
             CommandId = Guid.NewGuid();
         }
@@ -241,6 +246,15 @@ namespace FarmLand.Empire.Networking
 
         [JsonProperty("building", NullValueHandling = NullValueHandling.Ignore)]
         public string Building { get; }
+
+        [JsonProperty("orderKey", NullValueHandling = NullValueHandling.Ignore)]
+        public string OrderKey { get; }
+
+        [JsonProperty("orderDate", NullValueHandling = NullValueHandling.Ignore)]
+        public string OrderDate { get; }
+
+        public static FarmCommand FulfilTownOrder(int revision, string key, string date) =>
+            new FarmCommand("fulfil_town_order", revision, orderKey: key, orderDate: date);
 
         public static FarmCommand BuildTown(int revision, string building)
         {

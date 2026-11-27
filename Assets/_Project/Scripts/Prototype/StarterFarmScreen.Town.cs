@@ -41,6 +41,7 @@ namespace FarmLand.Empire.Prototype
                 townPanel.Add(button);
             }
             townPanel.Add(townStatus);
+            BuildTownOrdersPanel();
             controls.Add(townPanel);
         }
 
@@ -69,6 +70,7 @@ namespace FarmLand.Empire.Prototype
 
             foreach (var entry in buildingLabels)
                 RenderBuildingOption(town, entry.Kind, entry.Name, constructionButtons[entry.Kind]);
+            RenderTownOrders();
         }
 
         private void RenderBuildingOption(FarmTown town, string kind, string name, Button button)

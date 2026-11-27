@@ -452,6 +452,10 @@ namespace FarmLand.Empire.Prototype
                 "town_requires_road" => "Build a road before adding this building.",
                 "town_requires_cottage" => "Build a cottage before adding this building.",
                 "town_building_limit" => "This building type has reached its limit.",
+                "town_order_expired" => "The order date changed. The latest offers are shown.",
+                "town_order_locked" => "More residents are needed for this order.",
+                "town_order_fulfilled" => "This order was already filled today.",
+                "town_order_stock" => "There is not enough stock for this order.",
                 _ => "The action was rejected. The latest farm state is shown.",
             };
         }
