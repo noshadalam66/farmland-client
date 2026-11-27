@@ -48,8 +48,9 @@ to show wheat and accept the existing default plant command. With migration
 000006 and the market API, the farm shows the coin balance and server prices,
 and sells one harvested unit per action. With migration 000007, earnings can
 unlock one expansion. Use the plot selector to independently plant and
-harvest the starter and expansion plots. The prototype scene still shows
-the original starter plot geometry.
+harvest the starter and expansion plots. Regenerate the starter scene if
+needed to show the second plot and its crop marker. The farm screen guides
+new players from planting through buying the expansion using saved progress.
 
 The scene generator creates a fixed isometric test map. Authentication uses
 Firebase's email/password and token exchange REST endpoints. Sessions are

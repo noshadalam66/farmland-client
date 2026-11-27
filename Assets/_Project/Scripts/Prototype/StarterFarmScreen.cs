@@ -14,6 +14,8 @@ namespace FarmLand.Empire.Prototype
         [SerializeField] private string apiOrigin = "https://farm-api.example.com";
         [SerializeField] private string firebaseWebApiKey;
         [SerializeField] private GameObject cropMarker;
+        [SerializeField] private GameObject expansionGeometry;
+        [SerializeField] private GameObject expansionCropMarker;
 
         private StarterFarmApi api;
         private FirebaseSession session;
@@ -35,6 +37,7 @@ namespace FarmLand.Empire.Prototype
         private Button purchaseParcel;
         private VisualElement marketPanel;
         private Label wallet;
+        private Label farmHint;
         private readonly Dictionary<string, Button> saleButtons = new Dictionary<string, Button>();
         private Button action;
         private Button refresh;
@@ -159,6 +162,9 @@ namespace FarmLand.Empire.Prototype
             controls.Add(refresh);
             controls.Add(new Button(SignOut) { text = "Sign out" });
 
+            farmHint = new Label();
+            farmHint.style.whiteSpace = WhiteSpace.Normal;
+            controls.Add(farmHint);
             status = new Label();
             status.style.whiteSpace = WhiteSpace.Normal;
             panel.Add(status);
@@ -235,6 +241,12 @@ namespace FarmLand.Empire.Prototype
             FarmPlot selected = SelectedPlot;
             bool emptyPlot = farm != null && selected == null;
             bool expansionOwned = farm?.Expansion?.Owned == true;
+            if (expansionGeometry != null) expansionGeometry.SetActive(signedIn && expansionOwned);
+            if (expansionCropMarker != null)
+                expansionCropMarker.SetActive(signedIn && expansionOwned && farm.Expansion.Plot != null);
+
+            farmHint.text = FarmHint(remaining);
+            farmHint.style.display = string.IsNullOrEmpty(farmHint.text) ? DisplayStyle.None : DisplayStyle.Flex;
             plotSelector.style.display = expansionOwned ? DisplayStyle.Flex : DisplayStyle.None;
             plotSelector.SetEnabled(!busy && pending == null);
 
@@ -272,6 +284,20 @@ namespace FarmLand.Empire.Prototype
                 entry.Value.SetEnabled(!busy && !reloadRequired && pending == null &&
                     price > 0 && farm.Inventory.Count(entry.Key) > 0);
             }
+        }
+
+        private string FarmHint(double remaining)
+        {
+            if (busy || reloadRequired || pending != null || farm?.Expansion == null || farm.Expansion.Owned)
+                return string.Empty;
+            if (farm.Wallet != null && farm.Wallet.Coins >= farm.Expansion.Price)
+                return "Buy the expansion to unlock a second plot.";
+            if (farm.Inventory.Wheat > 0 || farm.Inventory.Count("corn") > 0 || farm.Inventory.Count("rice") > 0)
+                return "Sell harvested crops to earn coins for the expansion.";
+            if (farm.Plot == null) return "Choose a crop and plant it in the starter plot.";
+            return remaining > 0
+                ? "Your crop keeps growing while you're away."
+                : "Harvest the crop to add it to your inventory.";
         }
 
         private void BuyParcel()
