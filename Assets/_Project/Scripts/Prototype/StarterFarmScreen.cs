@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using FarmLand.Empire.Networking;
 using FarmLand.Empire.Session;
 using UnityEngine;
@@ -28,6 +29,8 @@ namespace FarmLand.Empire.Prototype
         private TextField password;
         private Label status;
         private Label plot;
+        private Label inventory;
+        private DropdownField cropSelector;
         private Button action;
         private Button refresh;
 
@@ -125,6 +128,11 @@ namespace FarmLand.Empire.Prototype
             panel.Add(controls);
             plot = new Label();
             controls.Add(plot);
+            inventory = new Label();
+            inventory.style.whiteSpace = WhiteSpace.Normal;
+            controls.Add(inventory);
+            cropSelector = new DropdownField("Crop", new List<string> { "Wheat", "Corn", "Rice" }, 0);
+            controls.Add(cropSelector);
             action = new Button(SubmitAction);
             controls.Add(action);
             refresh = new Button(() => StartCoroutine(Run(null))) { text = "Refresh farm" };
@@ -197,10 +205,19 @@ namespace FarmLand.Empire.Prototype
             signIn.SetEnabled(!busy);
             controls.SetEnabled(!busy);
             double remaining = RemainingSeconds();
-            plot.text = farm == null ? (busy ? "Loading farm…" : "Farm unavailable") : farm.Plot == null
-                ? $"Empty plot · Wheat: {farm.Inventory.Wheat}"
-                : $"Wheat: {farm.Inventory.Wheat} · " + (remaining > 0 ? $"Ready in {Math.Ceiling(remaining)}s" : "Ready to harvest");
-            action.text = pending != null ? "Retry action" : farm?.Plot == null ? "Plant wheat" : "Harvest";
+            bool canChooseCrop = farm?.Inventory.HasCropVariety == true;
+            bool emptyPlot = farm != null && farm.Plot == null;
+            cropSelector.style.display = canChooseCrop && emptyPlot ? DisplayStyle.Flex : DisplayStyle.None;
+            cropSelector.SetEnabled(!busy && !reloadRequired && pending == null);
+            inventory.text = farm == null ? string.Empty : canChooseCrop
+                ? $"Wheat: {farm.Inventory.Wheat} · Corn: {farm.Inventory.Corn} · Rice: {farm.Inventory.Rice}"
+                : $"Wheat: {farm.Inventory.Wheat}";
+
+            plot.text = farm == null ? (busy ? "Loading farm…" : "Farm unavailable") : emptyPlot
+                ? "Empty plot"
+                : remaining > 0 ? $"{CropLabel(farm.Plot.Crop)} · Ready in {Math.Ceiling(remaining)}s"
+                : $"{CropLabel(farm.Plot.Crop)} · Ready to harvest";
+            action.text = pending != null ? "Retry action" : farm?.Plot == null ? "Plant" : "Harvest";
             action.SetEnabled(!busy && (pending != null ||
                 (!reloadRequired && farm != null && remaining <= 0)));
             refresh.SetEnabled(!busy && pending == null);
@@ -212,9 +229,18 @@ namespace FarmLand.Empire.Prototype
                 (pending == null && RemainingSeconds() > 0)) return;
 
             bool retry = pending != null;
-            pending ??= farm.Plot == null ? FarmCommand.Plant(farm.Revision) : FarmCommand.Harvest(farm.Revision);
+            pending ??= farm.Plot == null
+                ? FarmCommand.Plant(farm.Revision, farm.Inventory.HasCropVariety ? cropSelector.value.ToLowerInvariant() : null)
+                : FarmCommand.Harvest(farm.Revision);
             StartCoroutine(Run(pending, retry));
         }
+
+        private static string CropLabel(string crop) => crop switch
+        {
+            "corn" => "Corn",
+            "rice" => "Rice",
+            _ => "Wheat",
+        };
 
         private IEnumerator Run(FarmCommand command, bool retry = false)
         {

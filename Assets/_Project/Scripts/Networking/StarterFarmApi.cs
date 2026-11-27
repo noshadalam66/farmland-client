@@ -25,10 +25,21 @@ namespace FarmLand.Empire.Networking
     {
         [JsonProperty("wheat", Required = Required.Always)]
         public int Wheat { get; private set; }
+
+        [JsonProperty("corn")]
+        public int? Corn { get; private set; }
+
+        [JsonProperty("rice")]
+        public int? Rice { get; private set; }
+
+        public bool HasCropVariety => Corn.HasValue && Rice.HasValue;
     }
 
     public sealed class FarmPlot
     {
+        [JsonProperty("crop")]
+        public string Crop { get; private set; } = "wheat";
+
         [JsonProperty("plantedAt", Required = Required.Always)]
         public DateTimeOffset PlantedAt { get; private set; }
 
@@ -38,12 +49,13 @@ namespace FarmLand.Empire.Networking
 
     public sealed class FarmCommand
     {
-        private FarmCommand(string action, int expectedRevision)
+        private FarmCommand(string action, int expectedRevision, string crop = null)
         {
             if (expectedRevision < 0)
                 throw new ArgumentOutOfRangeException(nameof(expectedRevision));
 
             Action = action;
+            Crop = crop;
             ExpectedRevision = expectedRevision;
             CommandId = Guid.NewGuid();
         }
@@ -57,7 +69,16 @@ namespace FarmLand.Empire.Networking
         [JsonProperty("action")]
         public string Action { get; }
 
-        public static FarmCommand Plant(int revision) => new FarmCommand("plant", revision);
+        [JsonProperty("crop", NullValueHandling = NullValueHandling.Ignore)]
+        public string Crop { get; }
+
+        public static FarmCommand Plant(int revision, string crop = null)
+        {
+            if (crop != null && crop != "wheat" && crop != "corn" && crop != "rice")
+                throw new ArgumentOutOfRangeException(nameof(crop));
+
+            return new FarmCommand("plant", revision, crop);
+        }
         public static FarmCommand Harvest(int revision) => new FarmCommand("harvest", revision);
     }
 

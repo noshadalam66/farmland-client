@@ -41,6 +41,11 @@ the plot, server countdown, and wheat inventory.
 5. Add the generated scene to the build profiles for Android, iOS, and Web.
    Use the same account across all three to check farm handoff.
 
+With the crop-variety API and database migration 000005, an empty plot offers
+wheat, corn, and rice. Inventory displays the server totals for all three, and
+planted plots show the crop name and server countdown. Older backends continue
+to show wheat and accept the existing default plant command.
+
 The scene generator creates a fixed isometric test map. Authentication uses
 Firebase's email/password and token exchange REST endpoints. Sessions are
 kept in memory for this prototype. Closing the app requires signing in again,
