@@ -28,6 +28,81 @@ namespace FarmLand.Empire.Networking
 
         [JsonProperty("expansion")]
         public FarmExpansion Expansion { get; private set; }
+
+        [JsonProperty("livestock")]
+        public FarmLivestock Livestock { get; private set; }
+
+        [JsonProperty("mill")]
+        public FarmMill Mill { get; private set; }
+    }
+
+    public sealed class FarmMill
+    {
+        [JsonProperty("owned", Required = Required.Always)]
+        public bool Owned { get; private set; }
+
+        [JsonProperty("price", Required = Required.Always)]
+        public int Price { get; private set; }
+
+        [JsonProperty("readyAt", Required = Required.AllowNull)]
+        public DateTimeOffset? ReadyAt { get; private set; }
+
+        [JsonProperty("wheatPerBatch", Required = Required.Always)]
+        public int WheatPerBatch { get; private set; }
+
+        [JsonProperty("flourPrice", Required = Required.Always)]
+        public int FlourPrice { get; private set; }
+    }
+
+    public sealed class FarmLivestock
+    {
+        [JsonProperty("animals", Required = Required.Always)]
+        public FarmAnimal[] Animals { get; private set; }
+
+        [JsonProperty("prices", Required = Required.Always)]
+        public System.Collections.Generic.Dictionary<string, int> Prices { get; private set; }
+
+        [JsonProperty("capacity", Required = Required.Always)]
+        public int Capacity { get; private set; }
+
+        [JsonProperty("breeding")]
+        public FarmBreeding Breeding { get; private set; }
+    }
+
+    public sealed class FarmBreeding
+    {
+        [JsonProperty("readyAt", Required = Required.Always)]
+        public DateTimeOffset ReadyAt { get; private set; }
+
+        [JsonProperty("motherId", Required = Required.Always)]
+        public Guid MotherId { get; private set; }
+
+        [JsonProperty("fatherId", Required = Required.Always)]
+        public Guid FatherId { get; private set; }
+    }
+
+    public sealed class FarmAnimal
+    {
+        [JsonProperty("animalId", Required = Required.Always)]
+        public Guid AnimalId { get; private set; }
+
+        [JsonProperty("species", Required = Required.Always)]
+        public string Species { get; private set; }
+
+        [JsonProperty("productReadyAt")]
+        public DateTimeOffset? ProductReadyAt { get; private set; }
+
+        [JsonProperty("sex")]
+        public string Sex { get; private set; }
+
+        [JsonProperty("motherId")]
+        public Guid? MotherId { get; private set; }
+
+        [JsonProperty("fatherId")]
+        public Guid? FatherId { get; private set; }
+
+        [JsonProperty("matureAt")]
+        public DateTimeOffset? MatureAt { get; private set; }
     }
 
     public sealed class FarmExpansion
@@ -65,6 +140,15 @@ namespace FarmLand.Empire.Networking
         [JsonProperty("rice")]
         public int? Rice { get; private set; }
 
+        [JsonProperty("milk")]
+        public int? Milk { get; private set; }
+
+        [JsonProperty("eggs")]
+        public int? Eggs { get; private set; }
+
+        [JsonProperty("flour")]
+        public int? Flour { get; private set; }
+
         public bool HasCropVariety => Corn.HasValue && Rice.HasValue;
 
         public int Count(string crop) => crop switch
@@ -90,7 +174,7 @@ namespace FarmLand.Empire.Networking
 
     public sealed class FarmCommand
     {
-        private FarmCommand(string action, int expectedRevision, string crop = null, string plotId = null)
+        private FarmCommand(string action, int expectedRevision, string crop = null, string plotId = null, string species = null, Guid? animalId = null, Guid? partnerId = null)
         {
             if (expectedRevision < 0)
                 throw new ArgumentOutOfRangeException(nameof(expectedRevision));
@@ -98,6 +182,9 @@ namespace FarmLand.Empire.Networking
             Action = action;
             Crop = crop;
             PlotId = plotId;
+            Species = species;
+            AnimalId = animalId;
+            PartnerId = partnerId;
             ExpectedRevision = expectedRevision;
             CommandId = Guid.NewGuid();
         }
@@ -128,6 +215,36 @@ namespace FarmLand.Empire.Networking
             new FarmCommand("harvest", revision, plotId: expansion ? "expansion" : null);
 
         public static FarmCommand BuyParcel(int revision) => new FarmCommand("buy_parcel", revision);
+
+        public static FarmCommand BuyMill(int revision) => new FarmCommand("buy_mill", revision);
+        public static FarmCommand StartMilling(int revision) => new FarmCommand("start_milling", revision);
+        public static FarmCommand CollectFlour(int revision) => new FarmCommand("collect_flour", revision);
+        public static FarmCommand SellFlour(int revision) => new FarmCommand("sell_flour", revision);
+
+        [JsonProperty("species", NullValueHandling = NullValueHandling.Ignore)]
+        public string Species { get; }
+
+        [JsonProperty("animalId", NullValueHandling = NullValueHandling.Ignore)]
+        public Guid? AnimalId { get; }
+
+        [JsonProperty("partnerId", NullValueHandling = NullValueHandling.Ignore)]
+        public Guid? PartnerId { get; }
+
+        public static FarmCommand StartBreeding(int revision, Guid first, Guid second) =>
+            new FarmCommand("start_breeding", revision, animalId: first, partnerId: second);
+
+        public static FarmCommand CollectOffspring(int revision) => new FarmCommand("collect_offspring", revision);
+
+        public static FarmCommand BuyAnimal(int revision, string species)
+        {
+            if (species != "goat" && species != "chicken")
+                throw new ArgumentOutOfRangeException(nameof(species));
+
+            return new FarmCommand("buy_animal", revision, species: species);
+        }
+
+        public static FarmCommand CareForAnimal(int revision, Guid animalId, bool collect) =>
+            new FarmCommand(collect ? "collect_animal" : "feed_animal", revision, animalId: animalId);
 
         public static FarmCommand Sell(int revision, string crop)
         {
