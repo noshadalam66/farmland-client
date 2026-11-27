@@ -74,3 +74,11 @@ the pilot worker.
 
 The pilot selector takes numeric coordinates. It loads every chunk for the
 selected bounded area and scales the preview to fit the starter camera.
+
+If the pilot worker exports a water mask, the generated starter scene
+downloads each mask and uses a separate blue material for faces whose vertices
+are mostly classified as water. The material follows the elevation mesh.
+This provides a classification preview without changing terrain heights.
+Older scenes can assign a **Water Material** on Starter Farm Screen, or be
+regenerated. Elevation-only packages and the editor mesh preview continue
+to work without the optional mask.

@@ -61,6 +61,8 @@ namespace FarmLand.Empire.Editor
             controller.FindProperty("cropMarker").objectReferenceValue = cropMarker;
             controller.FindProperty("fixedFarm").objectReferenceValue = fixedFarm;
             controller.FindProperty("terrainMaterial").objectReferenceValue = ground.GetComponent<Renderer>().sharedMaterial;
+            controller.FindProperty("waterMaterial").objectReferenceValue =
+                CreateMaterial(new Color(0.12f, 0.41f, 0.64f), assetPrefix + " Water.mat");
             controller.ApplyModifiedPropertiesWithoutUndo();
             EditorSceneManager.SaveScene(scene, path);
             AssetDatabase.SaveAssets();
@@ -74,12 +76,18 @@ namespace FarmLand.Empire.Editor
             tile.transform.position = center;
             tile.transform.localScale = size;
 
+            Material material = CreateMaterial(color, materialPath);
+            if (material != null) tile.GetComponent<Renderer>().sharedMaterial = material;
+            return tile;
+        }
+
+        private static Material CreateMaterial(Color color, string materialPath)
+        {
             Shader shader = GraphicsSettingsShader();
-            if (shader == null) return tile;
+            if (shader == null) return null;
             var material = new Material(shader) { color = color };
             AssetDatabase.CreateAsset(material, AssetDatabase.GenerateUniqueAssetPath(materialPath));
-            tile.GetComponent<Renderer>().sharedMaterial = material;
-            return tile;
+            return material;
         }
 
         private static Shader GraphicsSettingsShader()

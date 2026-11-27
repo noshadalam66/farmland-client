@@ -17,6 +17,7 @@ namespace FarmLand.Empire.Prototype
     {
         [SerializeField] private GameObject fixedFarm;
         [SerializeField] private Material terrainMaterial;
+        [SerializeField] private Material waterMaterial;
 
         private VisualElement worldPanel;
         private TextField latitude;
@@ -190,10 +191,22 @@ namespace FarmLand.Empire.Prototype
                         string filename = TerrainPackage.ChunkFilename(x, y);
                         yield return WorldRequest("/v1/world/terrain/" + filename, null,
                             (code, bytes) => { if (code == 200) chunk = bytes; });
+                        byte[] water = null;
+                        if (package.HasWaterMask && waterMaterial != null)
+                        {
+                            yield return WorldRequest("/v1/world/terrain/" + TerrainPackage.WaterFilename(x, y),
+                                null, (code, bytes) => { if (code == 200) water = bytes; });
+                            if (water == null)
+                            {
+                                worldStatus.text = "A terrain water mask is unavailable. Check again.";
+                                yield break;
+                            }
+                        }
+
                         Mesh mesh = null;
                         try
                         {
-                            mesh = package.CreateChunk(x, y, chunk);
+                            mesh = package.CreateChunk(x, y, chunk, water);
                         }
                         catch (InvalidDataException)
                         {
@@ -207,7 +220,8 @@ namespace FarmLand.Empire.Prototype
                         tile.GetComponent<MeshFilter>().sharedMesh = mesh;
                         var renderer = tile.GetComponent<MeshRenderer>();
                         renderer.enabled = false;
-                        renderer.sharedMaterial = terrainMaterial;
+                        if (water == null) renderer.sharedMaterial = terrainMaterial;
+                        else renderer.sharedMaterials = new[] { terrainMaterial, waterMaterial };
                     }
                 }
 

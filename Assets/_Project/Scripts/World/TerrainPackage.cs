@@ -13,12 +13,14 @@ namespace FarmLand.Empire.World
         private const float Spacing = 31.25f;
         private readonly int chunksPerAxis;
 
-        private TerrainPackage(int chunksPerAxis)
+        private TerrainPackage(int chunksPerAxis, bool hasWaterMask)
         {
             this.chunksPerAxis = chunksPerAxis;
+            HasWaterMask = hasWaterMask;
         }
 
         public int ChunksPerAxis => chunksPerAxis;
+        public bool HasWaterMask { get; }
 
         public static TerrainPackage Parse(string json)
         {
@@ -32,6 +34,13 @@ namespace FarmLand.Empire.World
                 manifest["chunks"] is not JArray chunks || chunks.Count != area)
                 throw new InvalidDataException("Unsupported terrain manifest.");
 
+            JToken water = manifest["waterMask"];
+            bool hasWaterMask = water != null;
+            if (hasWaterMask && (water is not JObject mask ||
+                                 mask.Value<string>("encoding") != "uint8" ||
+                                 mask.Value<int?>("waterValue") != 1))
+                throw new InvalidDataException("Unsupported terrain water mask.");
+
             var seen = new HashSet<(int, int)>();
             foreach (JToken entry in chunks)
             {
@@ -41,20 +50,26 @@ namespace FarmLand.Empire.World
                 int x = chunk.Value<int?>("x") ?? -1;
                 int y = chunk.Value<int?>("y") ?? -1;
                 if (x < 0 || y < 0 || x >= axis || y >= axis || !seen.Add((x, y)) ||
-                    chunk.Value<string>("file") != ChunkFilename(x, y))
+                    chunk.Value<string>("file") != ChunkFilename(x, y) ||
+                    (hasWaterMask && chunk.Value<string>("waterFile") != WaterFilename(x, y)))
                     throw new InvalidDataException("Invalid terrain chunk coordinates or filename.");
             }
-            return new TerrainPackage(axis);
+            return new TerrainPackage(axis, hasWaterMask);
         }
 
         public static string ChunkFilename(int x, int y) => $"height-{x}-{y}.f32";
 
-        public Mesh CreateChunk(int x, int y, byte[] contents)
+        public static string WaterFilename(int x, int y) => $"water-{x}-{y}.u8";
+
+        public Mesh CreateChunk(int x, int y, byte[] contents, byte[] water = null)
         {
             if (x < 0 || y < 0 || x >= ChunksPerAxis || y >= ChunksPerAxis)
                 throw new ArgumentOutOfRangeException(nameof(x), "Chunk is outside the world.");
             if (contents == null || contents.Length != Samples * Samples * sizeof(float))
                 throw new InvalidDataException("The terrain chunk has an invalid byte count.");
+
+            if (water != null && (!HasWaterMask || water.Length != Samples * Samples))
+                throw new InvalidDataException("The terrain water mask has an invalid byte count.");
 
             var vertices = new Vector3[Samples * Samples];
             var uv = new Vector2[vertices.Length];
@@ -70,6 +85,8 @@ namespace FarmLand.Empire.World
                     int index = row * Samples + column;
                     int bits = BinaryPrimitives.ReadInt32LittleEndian(contents.AsSpan(index * sizeof(float), sizeof(float)));
                     float height = BitConverter.Int32BitsToSingle(bits);
+                    if (water != null && water[index] > 1)
+                        throw new InvalidDataException("The terrain water mask contains an invalid value.");
                     if (float.IsNaN(height) || float.IsInfinity(height))
                         throw new InvalidDataException("The terrain chunk contains an invalid height.");
 
@@ -78,8 +95,8 @@ namespace FarmLand.Empire.World
                 }
             }
 
-            var triangles = new int[cells * cells * 6];
-            int next = 0;
+            var landTriangles = new List<int>(cells * cells * 6);
+            var waterTriangles = water == null ? null : new List<int>();
             for (int row = 0; row < cells; row++)
             {
                 for (int column = 0; column < cells; column++)
@@ -88,12 +105,8 @@ namespace FarmLand.Empire.World
                     int northeast = northwest + 1;
                     int southwest = northwest + Samples;
                     int southeast = southwest + 1;
-                    triangles[next++] = northwest;
-                    triangles[next++] = northeast;
-                    triangles[next++] = southwest;
-                    triangles[next++] = northeast;
-                    triangles[next++] = southeast;
-                    triangles[next++] = southwest;
+                    AddTriangle(northwest, northeast, southwest, water, landTriangles, waterTriangles);
+                    AddTriangle(northeast, southeast, southwest, water, landTriangles, waterTriangles);
                 }
             }
 
@@ -102,11 +115,24 @@ namespace FarmLand.Empire.World
                 name = ChunkFilename(x, y),
                 vertices = vertices,
                 uv = uv,
-                triangles = triangles,
             };
+            mesh.subMeshCount = water == null ? 1 : 2;
+            mesh.SetTriangles(landTriangles, 0, false);
+            if (waterTriangles != null) mesh.SetTriangles(waterTriangles, 1, false);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             return mesh;
+        }
+
+        private static void AddTriangle(int a, int b, int c, byte[] water,
+            List<int> landTriangles, List<int> waterTriangles)
+        {
+            List<int> triangles = water != null && water[a] + water[b] + water[c] >= 2
+                ? waterTriangles
+                : landTriangles;
+            triangles.Add(a);
+            triangles.Add(b);
+            triangles.Add(c);
         }
     }
 }
