@@ -1,10 +1,14 @@
 using FarmLand.Empire.Networking;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace FarmLand.Empire.Prototype
 {
     public sealed partial class StarterFarmScreen
     {
+        [SerializeField] private GameObject roadGeometry;
+        [SerializeField] private GameObject[] cottageGeometry;
+
         private Foldout townPanel;
         private Label townSummary;
         private Label townStatus;
@@ -30,10 +34,13 @@ namespace FarmLand.Empire.Prototype
         {
             FarmTown town = farm?.Town;
             townPanel.style.display = town == null ? DisplayStyle.None : DisplayStyle.Flex;
+            int roads = town == null ? 0 : CountBuildings(town, "road");
+            int cottages = town == null ? 0 : CountBuildings(town, "cottage");
+            if (roadGeometry != null) SetVisible(roadGeometry, roads > 0);
+            if (cottageGeometry != null)
+                for (int i = 0; i < cottageGeometry.Length; i++)
+                    if (cottageGeometry[i] != null) SetVisible(cottageGeometry[i], i < cottages);
             if (town == null) return;
-
-            int roads = CountBuildings(town, "road");
-            int cottages = CountBuildings(town, "cottage");
             townSummary.text = $"Residents: {town.Residents}/{town.HousingCapacity} · Cottages: {cottages}";
             townStatus.text = farm.Expansion?.Owned != true ? "Buy the farm expansion to start a settlement."
                 : roads == 0 ? "Build a road to unlock cottages."
@@ -65,6 +72,11 @@ namespace FarmLand.Empire.Prototype
                 !CanConstruct(town, kind, option)) return;
             pending = FarmCommand.BuildTown(farm.Revision, kind);
             StartCoroutine(Run(pending));
+        }
+
+        private static void SetVisible(GameObject building, bool visible)
+        {
+            if (building.activeSelf != visible) building.SetActive(visible);
         }
 
         private static int CountBuildings(FarmTown town, string kind)

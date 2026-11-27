@@ -125,6 +125,9 @@ coordinate fields in this build.
 With migration 000013 and the town API, open **Settlement** after buying the
 farm expansion. Build the road, then cottages. Refresh the farm to check the
 growing resident count. This panel shows the saved settlement state.
+Regenerate the starter scene to see the road and cottages in fixed slots
+along the farm edge. They reappear after sign-in based on the saved building
+counts. Terrain mode continues to show the geographic pilot separately.
 
 ## Reproducible pilot builds
 
