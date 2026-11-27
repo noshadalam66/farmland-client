@@ -45,3 +45,52 @@ The scene generator creates a fixed isometric test map. Authentication uses
 Firebase's email/password and token exchange REST endpoints. Sessions are
 kept in memory for this prototype. Closing the app requires signing in again,
 and signing in reloads the saved farm from the server.
+
+## Phase 2 terrain preview
+
+Generate a pilot terrain package with the GDAL exporter in `farmland-api`.
+In Unity, choose **FarmLand → Preview Terrain Package** and open its
+`manifest.json`. The editor opens a temporary preview scene with a mesh for
+each chunk. The meshes are generated in memory and intended for inspection
+in the Scene view. Reopen the manifest to regenerate the preview.
+
+The runtime mesh builder maps east to Unity X and north to Unity Z, with
+elevation as Unity Y in meters. Adjacent meshes place shared edge samples
+at the same coordinates. The current preview calculates lighting normals
+per mesh, so lighting can differ along chunk boundaries.
+
+### Load a pilot world in Play Mode
+
+Use **FarmLand → Create Starter Farm Scene** to generate a scene with the
+world controls, then configure and sign in as described above. The API must
+include world migrations 000003–000004 and use the same terrain directory as
+the pilot worker.
+
+1. Open **Pilot world**. Enter coordinates covered by the configured source
+   raster, select 1, 4, or 9 km², and request terrain.
+2. Run the API repository's terrain worker. Select **Check world** once it
+   finishes to fetch the manifest and render the height chunks.
+3. Close **Pilot world** to return to the fixed starter-farm view.
+
+The pilot selector takes numeric coordinates. It loads every chunk for the
+selected bounded area and scales the preview to fit the starter camera.
+
+If the pilot worker exports a water mask, the generated starter scene
+downloads each mask and uses a separate blue material for faces whose vertices
+are mostly classified as water. The material follows the elevation mesh.
+This provides a classification preview without changing terrain heights.
+Older scenes can assign a **Water Material** on Starter Farm Screen, or be
+regenerated. Elevation-only packages and the editor mesh preview continue
+to work without the optional mask.
+
+### Google Maps in the Unity Web pilot
+
+To enable **Choose on map** in the Web build, enable Maps JavaScript API in
+the Google Maps project and set **Google Maps Browser Key** on Starter Farm
+Screen. Restrict the browser key to the deployed Web origin and Maps
+JavaScript API. The game requests terrain only after the player confirms the
+coordinates and area in Unity. Google map tiles remain in the picker. The
+terrain worker uses the separately sourced elevation and water datasets.
+
+The picker opens at the San Francisco pilot center. Android and iOS use the
+coordinate fields in this build.

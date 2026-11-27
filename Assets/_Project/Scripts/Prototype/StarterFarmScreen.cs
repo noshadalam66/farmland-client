@@ -8,13 +8,14 @@ using UnityEngine.UIElements;
 namespace FarmLand.Empire.Prototype
 {
     [RequireComponent(typeof(UIDocument))]
-    public sealed class StarterFarmScreen : MonoBehaviour
+    public sealed partial class StarterFarmScreen : MonoBehaviour
     {
         [SerializeField] private string apiOrigin = "https://farm-api.example.com";
         [SerializeField] private string firebaseWebApiKey;
         [SerializeField] private GameObject cropMarker;
 
         private StarterFarmApi api;
+        private string worldOrigin;
         private FirebaseSession session;
         private FarmState farm;
         private FarmCommand pending;
@@ -45,6 +46,7 @@ namespace FarmLand.Empire.Prototype
             try
             {
                 api = new StarterFarmApi(origin);
+                worldOrigin = origin.GetLeftPart(UriPartial.Authority);
                 session = new FirebaseSession(firebaseWebApiKey.Trim());
                 Render();
             }
@@ -70,6 +72,7 @@ namespace FarmLand.Empire.Prototype
         private void Update()
         {
             if (session != null) Render();
+            CheckPilotMap();
         }
 
         private void OnApplicationFocus(bool focused)
@@ -129,6 +132,7 @@ namespace FarmLand.Empire.Prototype
             controls.Add(action);
             refresh = new Button(() => StartCoroutine(Run(null))) { text = "Refresh farm" };
             controls.Add(refresh);
+            BuildWorldControls();
             controls.Add(new Button(SignOut) { text = "Sign out" });
 
             status = new Label();
@@ -171,6 +175,9 @@ namespace FarmLand.Empire.Prototype
         private void SignOut()
         {
             session?.SignOut();
+            ClearTerrainView();
+            if (worldPanel != null) worldPanel.style.display = DisplayStyle.None;
+            selectionKey = null;
             farm = null;
             pending = null;
             reloadRequired = false;
