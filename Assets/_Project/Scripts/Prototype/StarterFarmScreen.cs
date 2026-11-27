@@ -171,6 +171,7 @@ namespace FarmLand.Empire.Prototype
             controls.Add(farmHint);
             BuildLivestockPanel();
             BuildMillPanel();
+            BuildTownPanel();
             BuildLeaderboardPanel();
             status = new Label();
             status.style.whiteSpace = WhiteSpace.Normal;
@@ -285,6 +286,7 @@ namespace FarmLand.Empire.Prototype
             refresh.SetEnabled(!busy && pending == null);
             RenderLivestock();
             RenderMill();
+            RenderTown();
 
             bool marketAvailable = farm?.Wallet != null && farm.Market != null;
             marketPanel.style.display = marketAvailable ? DisplayStyle.Flex : DisplayStyle.None;
@@ -442,6 +444,9 @@ namespace FarmLand.Empire.Prototype
                 "mill_idle" => "Start a wheat batch first.",
                 "flour_not_ready" => "The flour is still in progress.",
                 "insufficient_flour" => "There is no flour left to sell.",
+                "town_requires_expansion" => "Buy the farm expansion before building.",
+                "town_requires_road" => "Build a road before adding a cottage.",
+                "town_building_limit" => "This building type has reached its limit.",
                 _ => "The action was rejected. The latest farm state is shown.",
             };
         }
