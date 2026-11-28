@@ -332,12 +332,14 @@ namespace FarmLand.Empire.Prototype
                 return string.Empty;
             if (farm.Wallet != null && farm.Wallet.Coins >= farm.Expansion.Price)
                 return "Buy the expansion to unlock a second plot.";
+            if (farm.Plot != null && remaining <= 0)
+                return "Harvest the crop to add it to your inventory.";
+
+            int coinsNeeded = farm.Expansion.Price - (farm.Wallet?.Coins ?? 0);
             if (farm.Inventory.Wheat > 0 || farm.Inventory.Count("corn") > 0 || farm.Inventory.Count("rice") > 0)
-                return "Sell harvested crops to earn coins for the expansion.";
+                return $"Sell crops in the market. You need {coinsNeeded} more coins for the expansion.";
             if (farm.Plot == null) return "Choose a crop and plant it in the starter plot.";
-            return remaining > 0
-                ? "Your crop keeps growing while you're away."
-                : "Harvest the crop to add it to your inventory.";
+            return "Your crop keeps growing while you're away.";
         }
 
         private void BuyParcel()
