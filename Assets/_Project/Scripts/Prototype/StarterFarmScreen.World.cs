@@ -194,7 +194,9 @@ namespace FarmLand.Empire.Prototype
                         else worldStatus.text = "Terrain loaded.";
                         break;
                     case "failed":
-                        worldStatus.text = "Terrain generation failed. Choose a location and request terrain again.";
+                        worldStatus.text = (string)world["failureCode"] == "terrain_outside_coverage"
+                            ? "Elevation data does not cover this area. Choose another location or a smaller area."
+                            : "Terrain generation failed. Request terrain again or choose another location.";
                         break;
                     default:
                         worldStatus.text = "Could not read the world status. Try again.";
