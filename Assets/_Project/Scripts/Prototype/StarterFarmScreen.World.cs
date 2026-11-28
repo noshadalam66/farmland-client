@@ -212,8 +212,7 @@ namespace FarmLand.Empire.Prototype
         {
             worldStatus.text = "Downloading terrain…";
             byte[] manifest = null;
-            yield return WorldRequest("/v1/world/terrain/manifest.json", null,
-                (code, bytes) => { if (code == 200) manifest = bytes; });
+            yield return DownloadTerrainAsset("manifest.json", bytes => manifest = bytes);
 
             if (manifest == null)
             {
@@ -252,13 +251,11 @@ namespace FarmLand.Empire.Prototype
                         worldStatus.text = $"Downloading terrain tile {tileNumber} of {tileCount}…";
                         byte[] chunk = null;
                         string filename = TerrainPackage.ChunkFilename(x, y);
-                        yield return WorldRequest("/v1/world/terrain/" + filename, null,
-                            (code, bytes) => { if (code == 200) chunk = bytes; });
+                        yield return DownloadTerrainAsset(filename, bytes => chunk = bytes);
                         byte[] water = null;
                         if (package.HasWaterMask && waterMaterial != null)
                         {
-                            yield return WorldRequest("/v1/world/terrain/" + TerrainPackage.WaterFilename(x, y),
-                                null, (code, bytes) => { if (code == 200) water = bytes; });
+                            yield return DownloadTerrainAsset(TerrainPackage.WaterFilename(x, y), bytes => water = bytes);
                             if (water == null)
                             {
                                 worldStatus.text = "A terrain water mask is unavailable. Check again.";
@@ -310,6 +307,36 @@ namespace FarmLand.Empire.Prototype
                 {
                     ClearTerrainView(clearDetails: false);
                 }
+            }
+        }
+
+        private IEnumerator DownloadTerrainAsset(string filename, Action<byte[]> complete)
+        {
+            const int maxAttempts = 3;
+            string progress = worldStatus.text;
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                long statusCode = 0;
+                byte[] asset = null;
+                yield return WorldRequest("/v1/world/terrain/" + filename, null, (code, bytes) =>
+                {
+                    statusCode = code;
+                    asset = bytes;
+                });
+
+                if (statusCode == 200)
+                {
+                    worldStatus.text = progress;
+                    complete(asset);
+                    yield break;
+                }
+
+                bool transient = statusCode == 0 || statusCode == 408 || statusCode == 429 ||
+                    (statusCode >= 500 && statusCode <= 599);
+                if (!transient || attempt == maxAttempts) yield break;
+
+                worldStatus.text = $"{progress} Connection interrupted. Retrying…";
+                yield return new WaitForSecondsRealtime(attempt);
             }
         }
 

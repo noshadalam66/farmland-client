@@ -95,12 +95,15 @@ the pilot worker.
 
 1. Open **Pilot world**. Enter coordinates covered by the configured source
    raster, select 1, 4, or 9 km², and request terrain.
-2. Run the API repository's terrain worker. Select **Check world** once it
-   finishes to fetch the manifest and render the height chunks.
+2. Run the API repository's terrain worker. Keep the world panel open to
+   see generation status and watch the terrain tiles appear as they download.
 3. Close **Pilot world** to return to the fixed starter-farm view.
 
 The pilot selector takes numeric coordinates. It loads every chunk for the
 selected bounded area and scales the preview to fit the starter camera.
+To verify recovery, interrupt a tile request briefly and confirm that the
+client retries that asset and continues to the next tile. If all retries
+fail, the starter farm returns and **Check world** can reload the terrain.
 
 If the pilot worker exports a water mask, the generated starter scene
 downloads each mask and uses a separate blue material for faces whose vertices
