@@ -17,6 +17,13 @@ namespace FarmLand.Empire.Prototype
         [SerializeField] private GameObject expansionGeometry;
         [SerializeField] private GameObject expansionCropMarker;
 
+        [SerializeField] private Camera plotCamera;
+        [SerializeField] private Collider starterPlotCollider;
+        [SerializeField] private Collider expansionPlotCollider;
+
+        private bool selectingPlot;
+        private Button selectPlotOnFarm;
+        private Button cancelPlotSelection;
         private PlotCropVisual starterCropVisual;
         private PlotCropVisual expansionCropVisual;
         private StarterFarmApi api;
@@ -123,6 +130,9 @@ namespace FarmLand.Empire.Prototype
         {
             var root = GetComponent<UIDocument>().rootVisualElement;
             root.Clear();
+            root.pickingMode = PickingMode.Position;
+            root.UnregisterCallback<ClickEvent>(SelectPlotFromScene);
+            root.RegisterCallback<ClickEvent>(SelectPlotFromScene);
             var panel = new VisualElement();
             panel.style.width = Length.Percent(90);
             panel.style.maxWidth = 420;
@@ -153,10 +163,14 @@ namespace FarmLand.Empire.Prototype
             controls.style.flexShrink = 1;
             controls.style.minHeight = 0;
             panel.Add(controls);
+            cancelPlotSelection = new Button(() => SetPlotSelection(false)) { text = "Cancel plot selection" };
+            panel.Add(cancelPlotSelection);
             plot = new Label();
             controls.Add(plot);
             plotSelector = new DropdownField("Plot", new List<string> { "Starter", "Expansion" }, 0);
             controls.Add(plotSelector);
+            selectPlotOnFarm = new Button(() => SetPlotSelection(true)) { text = "Select on farm" };
+            controls.Add(selectPlotOnFarm);
             otherPlot = new Label();
             otherPlot.style.whiteSpace = WhiteSpace.Normal;
             controls.Add(otherPlot);
@@ -240,6 +254,7 @@ namespace FarmLand.Empire.Prototype
             session?.SignOut();
             ClearTerrainView();
             if (worldPanel != null) worldPanel.style.display = DisplayStyle.None;
+            selectingPlot = false;
             selectionKey = null;
             failedWorldRequestId = null;
             farm = null;
@@ -270,7 +285,8 @@ namespace FarmLand.Empire.Prototype
             bool signedIn = session.SignedIn;
             RenderCropVisual(cropMarker, starterCropVisual, signedIn ? farm?.Plot : null);
             signIn.style.display = signedIn ? DisplayStyle.None : DisplayStyle.Flex;
-            controls.style.display = signedIn ? DisplayStyle.Flex : DisplayStyle.None;
+            controls.style.display = signedIn && !selectingPlot ? DisplayStyle.Flex : DisplayStyle.None;
+            cancelPlotSelection.style.display = signedIn && selectingPlot ? DisplayStyle.Flex : DisplayStyle.None;
             signIn.SetEnabled(!busy);
             controls.SetEnabled(!busy);
             FarmPlot selected = SelectedPlot;
@@ -285,6 +301,9 @@ namespace FarmLand.Empire.Prototype
             farmHint.style.display = string.IsNullOrEmpty(farmHint.text) ? DisplayStyle.None : DisplayStyle.Flex;
             plotSelector.style.display = expansionOwned ? DisplayStyle.Flex : DisplayStyle.None;
             plotSelector.SetEnabled(!busy && pending == null);
+            selectPlotOnFarm.style.display = expansionOwned && plotCamera != null && starterPlotCollider != null &&
+                expansionPlotCollider != null && fixedFarm != null && fixedFarm.activeInHierarchy ? DisplayStyle.Flex : DisplayStyle.None;
+            selectPlotOnFarm.SetEnabled(!busy && !reloadRequired && pending == null);
             otherPlot.style.display = expansionOwned ? DisplayStyle.Flex : DisplayStyle.None;
             if (expansionOwned)
             {
@@ -330,6 +349,32 @@ namespace FarmLand.Empire.Prototype
                 entry.Value.SetEnabled(!busy && !reloadRequired && pending == null &&
                     price > 0 && farm.Inventory.Count(entry.Key) > 0);
             }
+        }
+
+        private void SetPlotSelection(bool selecting)
+        {
+            if (selecting && (busy || reloadRequired || pending != null || farm?.Expansion?.Owned != true)) return;
+            selectingPlot = selecting;
+            status.text = selecting ? "Tap or click the starter or expansion plot." : string.Empty;
+            Render();
+        }
+
+        private void SelectPlotFromScene(ClickEvent click)
+        {
+            if (!selectingPlot || busy || click.button != 0 || click.target is not VisualElement root ||
+                root != click.currentTarget) return;
+            Rect bounds = root.worldBound;
+            if (bounds.width <= 0 || bounds.height <= 0) return;
+
+            Vector2 point = click.position;
+            Ray ray = plotCamera.ViewportPointToRay(new Vector3(
+                (point.x - bounds.xMin) / bounds.width, 1 - (point.y - bounds.yMin) / bounds.height, 0));
+            bool starterHit = starterPlotCollider.Raycast(ray, out RaycastHit starter, plotCamera.farClipPlane);
+            bool expansionHit = expansionPlotCollider.Raycast(ray, out RaycastHit expansion, plotCamera.farClipPlane);
+            if (!starterHit && !expansionHit) return;
+
+            plotSelector.index = expansionHit && (!starterHit || expansion.distance < starter.distance) ? 1 : 0;
+            SetPlotSelection(false);
         }
 
         private void RenderCropVisual(GameObject marker, PlotCropVisual visual, FarmPlot crop)

@@ -232,7 +232,9 @@ the starter farm returns and **Check world** can recover the world.
 3. Plant wheat on the starter plot and corn on the expansion. Check that
    both statuses are visible and each uses its own countdown. In a newly
    generated scene, check that the crops look distinct, grow above the soil,
-   and show a harvest marker when ready.
+   and show a harvest marker when ready. Use **Select on farm** to tap or
+   click each plot and verify the plot selector and farming controls match
+   the chosen plot. The dropdown also works in existing scenes.
 4. Return when both crops are ready. Harvest the starter plot and confirm
    the expansion still shows corn. Harvest corn and verify both items are
    available in the market. Sign in on another platform and confirm that
