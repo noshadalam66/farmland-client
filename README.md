@@ -201,3 +201,23 @@ iOS modules. Set these GitHub repository variables:
 
 Download the artifacts from the same workflow run before performing the
 Android → web → iOS → Android handoff above.
+
+### Phase 2 release acceptance
+
+Download the staging terrain package using the API repository's
+`test/phase-two-acceptance.mjs` and set `FARMLAND_TERRAIN_PACKAGE` to its
+directory. Run the Unity mesh check before testing the release clients.
+
+```sh
+"$UNITY_EDITOR" -batchmode -nographics -quit -projectPath "$PWD" \
+  -executeMethod FarmLand.Empire.Editor.PhaseTwoAcceptance.VerifyTerrain -logFile -
+```
+
+In each release client, sign in to the same acceptance account and open
+the saved 9 km² San Francisco world. Verify that all nine tiles render,
+land and water are visible, and the saved location and source identifiers
+agree across platforms. On a separate test account, request an uncovered
+area, verify the coverage message, and replace it with the San Francisco
+selection. During a terrain download, briefly interrupt connectivity to
+verify the retry, then repeat with a sustained interruption to verify that
+the starter farm returns and **Check world** can recover the world.
