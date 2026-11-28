@@ -49,12 +49,9 @@ namespace FarmLand.Empire.Editor
             GameObject soil = CreateTile("Starter Plot", Vector3.zero, new Vector3(2.5f, 0.3f, 2.5f),
                 new Color(0.47f, 0.28f, 0.17f), assetPrefix + " Soil.mat");
 
-            GameObject cropMarker = CreateTile("Wheat", new Vector3(0, 0.42f, 0), new Vector3(1.6f, 0.5f, 1.6f),
-                new Color(0.88f, 0.68f, 0.23f), assetPrefix + " Wheat.mat");
             ground.transform.SetParent(fixedFarm.transform);
             soil.transform.SetParent(fixedFarm.transform);
-            cropMarker.transform.SetParent(fixedFarm.transform);
-            cropMarker.SetActive(false);
+            GameObject cropMarker = CreateCropVisual(fixedFarm.transform, Vector3.zero, assetPrefix);
 
             var settings = ScriptableObject.CreateInstance<PanelSettings>();
             settings.themeStyleSheet = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(
@@ -87,16 +84,50 @@ namespace FarmLand.Empire.Editor
             expansion.transform.SetParent(parent, false);
             GameObject soil = CreateTile("Expansion Soil", new Vector3(2.65f, 0, 0), new Vector3(2.5f, 0.3f, 2.5f),
                 new Color(0.47f, 0.28f, 0.17f), assetPrefix + " Expansion Soil.mat");
-            GameObject crop = CreateTile("Expansion Crop", new Vector3(2.65f, 0.42f, 0), new Vector3(1.6f, 0.5f, 1.6f),
-                new Color(0.88f, 0.68f, 0.23f), assetPrefix + " Expansion Crop.mat");
+            GameObject crop = CreateCropVisual(expansion.transform, new Vector3(2.65f, 0, 0), assetPrefix);
             soil.transform.SetParent(expansion.transform);
-            crop.transform.SetParent(expansion.transform);
-            crop.SetActive(false);
             expansion.SetActive(false);
 
             controller.FindProperty("expansionGeometry").objectReferenceValue = expansion;
             controller.FindProperty("expansionCropMarker").objectReferenceValue = crop;
             controller.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static GameObject CreateCropVisual(Transform parent, Vector3 center, string assetPrefix)
+        {
+            var bed = new GameObject("Crops");
+            bed.transform.SetParent(parent, false);
+            bed.transform.localPosition = center + Vector3.up * 0.15f;
+
+            var wheat = new GameObject("Wheat");
+            var corn = new GameObject("Corn");
+            var rice = new GameObject("Rice");
+            wheat.transform.SetParent(bed.transform, false);
+            corn.transform.SetParent(bed.transform, false);
+            rice.transform.SetParent(bed.transform, false);
+            var wheatMaterial = CreateMaterial(new Color(0.91f, 0.69f, 0.24f), assetPrefix + " Wheat.mat");
+            var cornMaterial = CreateMaterial(new Color(0.27f, 0.52f, 0.19f), assetPrefix + " Corn.mat");
+            var riceMaterial = CreateMaterial(new Color(0.47f, 0.68f, 0.32f), assetPrefix + " Rice.mat");
+            for (int row = -1; row <= 1; row++)
+            for (int column = -1; column <= 1; column++)
+            {
+                var position = new Vector3(column * 0.54f, 0, row * 0.54f);
+                TownPiece(wheat.transform, "Wheat head", position + Vector3.up * 0.26f,
+                    new Vector3(0.10f, 0.52f, 0.10f), wheatMaterial, PrimitiveType.Cylinder);
+                TownPiece(corn.transform, "Corn stalk", position + Vector3.up * 0.33f,
+                    new Vector3(0.11f, 0.66f, 0.11f), cornMaterial);
+                TownPiece(corn.transform, "Corn ear", position + new Vector3(0.08f, 0.49f, 0),
+                    new Vector3(0.16f, 0.24f, 0.12f), wheatMaterial, PrimitiveType.Sphere);
+                TownPiece(rice.transform, "Rice cluster", position + Vector3.up * 0.16f,
+                    new Vector3(0.30f, 0.32f, 0.24f), riceMaterial, PrimitiveType.Sphere);
+            }
+
+            var ready = TownPiece(bed.transform, "Ready to harvest", Vector3.up * 0.91f,
+                Vector3.one * 0.16f, wheatMaterial);
+            ready.transform.localRotation = Quaternion.Euler(0, 45, 45);
+            bed.AddComponent<PlotCropVisual>().Configure(wheat, corn, rice, ready);
+            bed.SetActive(false);
+            return bed;
         }
 
         private static void AddTownPreview(SerializedObject controller, Transform fixedFarm, string assetPrefix)

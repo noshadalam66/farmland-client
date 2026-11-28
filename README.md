@@ -230,7 +230,9 @@ the starter farm returns and **Check world** can recover the world.
 2. Sell it and verify that the balance increases at the listed market price
    and the inventory decreases by one. Buy the expansion with the proceeds.
 3. Plant wheat on the starter plot and corn on the expansion. Check that
-   both statuses are visible and each uses its own countdown.
+   both statuses are visible and each uses its own countdown. In a newly
+   generated scene, check that the crops look distinct, grow above the soil,
+   and show a harvest marker when ready.
 4. Return when both crops are ready. Harvest the starter plot and confirm
    the expansion still shows corn. Harvest corn and verify both items are
    available in the market. Sign in on another platform and confirm that

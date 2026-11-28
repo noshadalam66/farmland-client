@@ -17,6 +17,8 @@ namespace FarmLand.Empire.Prototype
         [SerializeField] private GameObject expansionGeometry;
         [SerializeField] private GameObject expansionCropMarker;
 
+        private PlotCropVisual starterCropVisual;
+        private PlotCropVisual expansionCropVisual;
         private StarterFarmApi api;
         private string worldOrigin;
         private FirebaseSession session;
@@ -48,7 +50,13 @@ namespace FarmLand.Empire.Prototype
         private void OnEnable()
         {
             BuildScreen();
-            if (cropMarker != null) cropMarker.SetActive(false);
+            if (cropMarker != null)
+            {
+                starterCropVisual = cropMarker.GetComponent<PlotCropVisual>();
+                cropMarker.SetActive(false);
+            }
+            if (expansionCropMarker != null)
+                expansionCropVisual = expansionCropMarker.GetComponent<PlotCropVisual>();
             if (!Uri.TryCreate(apiOrigin, UriKind.Absolute, out Uri origin) ||
                 string.IsNullOrWhiteSpace(firebaseWebApiKey))
             {
@@ -260,7 +268,7 @@ namespace FarmLand.Empire.Prototype
         private void Render()
         {
             bool signedIn = session.SignedIn;
-            if (cropMarker != null) cropMarker.SetActive(signedIn && farm?.Plot != null);
+            RenderCropVisual(cropMarker, starterCropVisual, signedIn ? farm?.Plot : null);
             signIn.style.display = signedIn ? DisplayStyle.None : DisplayStyle.Flex;
             controls.style.display = signedIn ? DisplayStyle.Flex : DisplayStyle.None;
             signIn.SetEnabled(!busy);
@@ -271,8 +279,7 @@ namespace FarmLand.Empire.Prototype
             bool emptyPlot = farm != null && selected == null;
             bool expansionOwned = farm?.Expansion?.Owned == true;
             if (expansionGeometry != null) expansionGeometry.SetActive(signedIn && expansionOwned);
-            if (expansionCropMarker != null)
-                expansionCropMarker.SetActive(signedIn && expansionOwned && farm.Expansion.Plot != null);
+            RenderCropVisual(expansionCropMarker, expansionCropVisual, signedIn && expansionOwned ? farm.Expansion.Plot : null);
 
             farmHint.text = FarmHint(remaining);
             farmHint.style.display = string.IsNullOrEmpty(farmHint.text) ? DisplayStyle.None : DisplayStyle.Flex;
@@ -323,6 +330,17 @@ namespace FarmLand.Empire.Prototype
                 entry.Value.SetEnabled(!busy && !reloadRequired && pending == null &&
                     price > 0 && farm.Inventory.Count(entry.Key) > 0);
             }
+        }
+
+        private void RenderCropVisual(GameObject marker, PlotCropVisual visual, FarmPlot crop)
+        {
+            if (marker == null) return;
+            marker.SetActive(crop != null);
+            if (crop == null || visual == null) return;
+
+            double duration = (crop.ReadyAt - crop.PlantedAt).TotalSeconds;
+            float growth = duration > 0 ? Mathf.Clamp01((float)(1 - RemainingSeconds(crop) / duration)) : 1;
+            visual.Show(crop.Crop, growth);
         }
 
         private void RenderCropDetails(bool emptyPlot, string crop)
