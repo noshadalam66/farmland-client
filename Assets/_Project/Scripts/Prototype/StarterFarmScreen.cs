@@ -34,6 +34,7 @@ namespace FarmLand.Empire.Prototype
         private Label plot;
         private Label inventory;
         private DropdownField cropSelector;
+        private Label cropDetails;
         private Label otherPlot;
         private DropdownField plotSelector;
         private Button purchaseParcel;
@@ -158,6 +159,9 @@ namespace FarmLand.Empire.Prototype
             controls.Add(inventory);
             cropSelector = new DropdownField("Crop", new List<string> { "Wheat", "Corn", "Rice" }, 0);
             controls.Add(cropSelector);
+            cropDetails = new Label();
+            cropDetails.style.whiteSpace = WhiteSpace.Normal;
+            controls.Add(cropDetails);
             action = new Button(SubmitAction);
             controls.Add(action);
             marketPanel = new VisualElement();
@@ -292,6 +296,8 @@ namespace FarmLand.Empire.Prototype
             }
             cropSelector.style.display = canChooseCrop && emptyPlot ? DisplayStyle.Flex : DisplayStyle.None;
             cropSelector.SetEnabled(!busy && !reloadRequired && pending == null);
+            string selectedCrop = canChooseCrop ? cropSelector.value.ToLowerInvariant() : "wheat";
+            RenderCropDetails(emptyPlot, selectedCrop);
             inventory.text = farm == null ? string.Empty : canChooseCrop
                 ? $"Wheat: {farm.Inventory.Wheat} · Corn: {farm.Inventory.Corn} · Rice: {farm.Inventory.Rice}"
                 : $"Wheat: {farm.Inventory.Wheat}";
@@ -317,6 +323,21 @@ namespace FarmLand.Empire.Prototype
                 entry.Value.SetEnabled(!busy && !reloadRequired && pending == null &&
                     price > 0 && farm.Inventory.Count(entry.Key) > 0);
             }
+        }
+
+        private void RenderCropDetails(bool emptyPlot, string crop)
+        {
+            var durations = farm?.CropGrowthMilliseconds;
+            if (!emptyPlot || durations == null || !durations.TryGetValue(crop, out int milliseconds) || milliseconds <= 0)
+            {
+                cropDetails.style.display = DisplayStyle.None;
+                return;
+            }
+
+            int price = farm.Market?.SellPrices?.Count(crop) ?? 0;
+            string growTime = $"Grows in {Math.Ceiling(milliseconds / 1000.0)}s";
+            cropDetails.text = price > 0 ? $"{growTime} · Sells for {price} coins" : growTime;
+            cropDetails.style.display = DisplayStyle.Flex;
         }
 
         private static string PlotStatus(FarmPlot crop, double remaining)

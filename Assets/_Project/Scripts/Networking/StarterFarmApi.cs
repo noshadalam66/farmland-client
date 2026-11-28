@@ -23,6 +23,9 @@ namespace FarmLand.Empire.Networking
         [JsonProperty("wallet")]
         public FarmWallet Wallet { get; private set; }
 
+        [JsonProperty("cropGrowthMilliseconds")]
+        public System.Collections.Generic.Dictionary<string, int> CropGrowthMilliseconds { get; private set; }
+
         [JsonProperty("market")]
         public FarmMarket Market { get; private set; }
 
