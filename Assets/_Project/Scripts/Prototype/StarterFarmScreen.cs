@@ -34,6 +34,7 @@ namespace FarmLand.Empire.Prototype
         private Label plot;
         private Label inventory;
         private DropdownField cropSelector;
+        private Label otherPlot;
         private DropdownField plotSelector;
         private Button purchaseParcel;
         private VisualElement marketPanel;
@@ -147,6 +148,9 @@ namespace FarmLand.Empire.Prototype
             controls.Add(plot);
             plotSelector = new DropdownField("Plot", new List<string> { "Starter", "Expansion" }, 0);
             controls.Add(plotSelector);
+            otherPlot = new Label();
+            otherPlot.style.whiteSpace = WhiteSpace.Normal;
+            controls.Add(otherPlot);
             purchaseParcel = new Button(BuyParcel);
             controls.Add(purchaseParcel);
             inventory = new Label();
@@ -242,12 +246,11 @@ namespace FarmLand.Empire.Prototype
 
         private FarmPlot SelectedPlot => ExpansionSelected ? farm.Expansion.Plot : farm?.Plot;
 
-        private double RemainingSeconds()
+        private double RemainingSeconds(FarmPlot crop)
         {
-            FarmPlot selected = SelectedPlot;
-            if (selected == null) return 0;
+            if (crop == null) return 0;
             double elapsed = Time.realtimeSinceStartupAsDouble - receivedAt;
-            return Math.Max(0, (selected.ReadyAt - farm.ServerTime).TotalSeconds - elapsed);
+            return Math.Max(0, (crop.ReadyAt - farm.ServerTime).TotalSeconds - elapsed);
         }
 
         private void Render()
@@ -258,9 +261,9 @@ namespace FarmLand.Empire.Prototype
             controls.style.display = signedIn ? DisplayStyle.Flex : DisplayStyle.None;
             signIn.SetEnabled(!busy);
             controls.SetEnabled(!busy);
-            double remaining = RemainingSeconds();
-            bool canChooseCrop = farm?.Inventory.HasCropVariety == true;
             FarmPlot selected = SelectedPlot;
+            double remaining = RemainingSeconds(selected);
+            bool canChooseCrop = farm?.Inventory.HasCropVariety == true;
             bool emptyPlot = farm != null && selected == null;
             bool expansionOwned = farm?.Expansion?.Owned == true;
             if (expansionGeometry != null) expansionGeometry.SetActive(signedIn && expansionOwned);
@@ -271,6 +274,13 @@ namespace FarmLand.Empire.Prototype
             farmHint.style.display = string.IsNullOrEmpty(farmHint.text) ? DisplayStyle.None : DisplayStyle.Flex;
             plotSelector.style.display = expansionOwned ? DisplayStyle.Flex : DisplayStyle.None;
             plotSelector.SetEnabled(!busy && pending == null);
+            otherPlot.style.display = expansionOwned ? DisplayStyle.Flex : DisplayStyle.None;
+            if (expansionOwned)
+            {
+                FarmPlot inactivePlot = ExpansionSelected ? farm.Plot : farm.Expansion.Plot;
+                string inactiveName = ExpansionSelected ? "Starter" : "Expansion";
+                otherPlot.text = $"{inactiveName} plot · {PlotStatus(inactivePlot, RemainingSeconds(inactivePlot))}";
+            }
 
             bool canBuy = farm?.Expansion != null && !expansionOwned && farm.Wallet != null;
             purchaseParcel.style.display = canBuy ? DisplayStyle.Flex : DisplayStyle.None;
@@ -286,10 +296,8 @@ namespace FarmLand.Empire.Prototype
                 ? $"Wheat: {farm.Inventory.Wheat} · Corn: {farm.Inventory.Corn} · Rice: {farm.Inventory.Rice}"
                 : $"Wheat: {farm.Inventory.Wheat}";
 
-            plot.text = farm == null ? (busy ? "Loading farm…" : "Farm unavailable") : emptyPlot
-                ? "Empty plot"
-                : remaining > 0 ? $"{CropLabel(selected.Crop)} · Ready in {Math.Ceiling(remaining)}s"
-                : $"{CropLabel(selected.Crop)} · Ready to harvest";
+            plot.text = farm == null ? (busy ? "Loading farm…" : "Farm unavailable")
+                : PlotStatus(selected, remaining);
             action.text = pending != null ? "Retry action" : selected == null ? "Plant" : "Harvest";
             action.SetEnabled(!busy && (pending != null ||
                 (!reloadRequired && farm != null && remaining <= 0)));
@@ -309,6 +317,13 @@ namespace FarmLand.Empire.Prototype
                 entry.Value.SetEnabled(!busy && !reloadRequired && pending == null &&
                     price > 0 && farm.Inventory.Count(entry.Key) > 0);
             }
+        }
+
+        private static string PlotStatus(FarmPlot crop, double remaining)
+        {
+            if (crop == null) return "Empty plot";
+            string name = CropLabel(crop.Crop);
+            return remaining > 0 ? $"{name} · Ready in {Math.Ceiling(remaining)}s" : $"{name} · Ready to harvest";
         }
 
         private string FarmHint(double remaining)
@@ -346,7 +361,7 @@ namespace FarmLand.Empire.Prototype
         private void SubmitAction()
         {
             if (busy || farm == null || (reloadRequired && pending == null) ||
-                (pending == null && RemainingSeconds() > 0)) return;
+                (pending == null && RemainingSeconds(SelectedPlot) > 0)) return;
 
             bool retry = pending != null;
             pending ??= SelectedPlot == null
