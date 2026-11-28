@@ -62,6 +62,7 @@ namespace FarmLand.Empire.Editor
                     controller.FindProperty("firebaseWebApiKey").stringValue = firebaseKey;
                     controller.FindProperty("googleMapsBrowserKey").stringValue = mapsKey;
                     controller.ApplyModifiedPropertiesWithoutUndo();
+                    if (release) PhaseThreeAcceptance.VerifyFarmScene(controller);
                 });
                 if (target == BuildTarget.Android) EditorUserBuildSettings.buildAppBundle = release;
 
