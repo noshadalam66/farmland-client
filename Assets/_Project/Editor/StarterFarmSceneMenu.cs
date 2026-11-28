@@ -62,6 +62,8 @@ namespace FarmLand.Empire.Editor
             var document = screen.AddComponent<UIDocument>();
             document.panelSettings = settings;
             var controller = new SerializedObject(screen.AddComponent<StarterFarmScreen>());
+            controller.FindProperty("plotCamera").objectReferenceValue = camera;
+            controller.FindProperty("starterPlotCollider").objectReferenceValue = soil.GetComponent<Collider>();
             controller.FindProperty("cropMarker").objectReferenceValue = cropMarker;
             controller.FindProperty("fixedFarm").objectReferenceValue = fixedFarm;
             controller.FindProperty("terrainMaterial").objectReferenceValue = ground.GetComponent<Renderer>().sharedMaterial;
@@ -88,6 +90,7 @@ namespace FarmLand.Empire.Editor
             soil.transform.SetParent(expansion.transform);
             expansion.SetActive(false);
 
+            controller.FindProperty("expansionPlotCollider").objectReferenceValue = soil.GetComponent<Collider>();
             controller.FindProperty("expansionGeometry").objectReferenceValue = expansion;
             controller.FindProperty("expansionCropMarker").objectReferenceValue = crop;
             controller.ApplyModifiedPropertiesWithoutUndo();
