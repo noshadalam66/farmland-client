@@ -221,3 +221,17 @@ area, verify the coverage message, and replace it with the San Francisco
 selection. During a terrain download, briefly interrupt connectivity to
 verify the retry, then repeat with a sustained interruption to verify that
 the starter farm returns and **Check world** can recover the world.
+
+
+### Phase 3 release acceptance
+
+1. On a fresh farm, plant rice in the starter plot. Close the game before it
+   matures. Reopen with the same account after two minutes and harvest rice.
+2. Sell it and verify that the balance increases at the listed market price
+   and the inventory decreases by one. Buy the expansion with the proceeds.
+3. Plant wheat on the starter plot and corn on the expansion. Check that
+   both statuses are visible and each uses its own countdown.
+4. Return when both crops are ready. Harvest the starter plot and confirm
+   the expansion still shows corn. Harvest corn and verify both items are
+   available in the market. Sign in on another platform and confirm that
+   the empty plots, inventory, and wallet match.
