@@ -225,6 +225,12 @@ the starter farm returns and **Check world** can recover the world.
 
 ### Phase 3 release acceptance
 
+The release build verifies plot selection geometry and the growing and
+harvest-ready states for wheat, corn, and rice before packaging the scene.
+A failed check stops packaging. The API repository's real crop timer test
+covers the saved state and economy. Use the steps below to verify the
+player flow on Android, iOS, and web.
+
 1. On a fresh farm, plant rice in the starter plot. Close the game before it
    matures. Reopen with the same account after two minutes and harvest rice.
 2. Sell it and verify that the balance increases at the listed market price
